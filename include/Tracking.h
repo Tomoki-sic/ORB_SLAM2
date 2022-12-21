@@ -96,7 +96,7 @@ public:
 
     // Current Frame
     Frame mCurrentFrame;
-    cv::Mat mImGray;
+    cv::Mat mImGray, mImGray_middle, mImGray_high;
 
     // Initialization Variables (Monocular)
     std::vector<int> mvIniLastMatches;

@@ -268,6 +268,8 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 cv::Mat Tracking::GrabImageMonocularWAF(const cv::Mat &im, const cv::Mat &im_middle, const cv::Mat &im_high, const double &timestamp)
 {
     mImGray = im;
+    mImGray_middle = im_middle;
+    mImGray_high = im_high;
 
     if(mImGray.channels()==3)
     {
