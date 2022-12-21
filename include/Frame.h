@@ -186,7 +186,7 @@ public:
     static float mnMaxY;
 
     static bool mbInitialComputations;
-
+    Frame mCurrentFrame_middle, mCurrentFrame_high;
 
 private:
 
