@@ -270,20 +270,35 @@ cv::Mat Tracking::GrabImageMonocularWAF(const cv::Mat &im, const cv::Mat &im_mid
     mImGray = im;
     mImGray_middle = im_middle;
     mImGray_high = im_high;
-
     if(mImGray.channels()==3)
     {
         if(mbRGB)
+        {
             cvtColor(mImGray,mImGray,CV_RGB2GRAY);
+            cvtColor(mImGray_middle,mImGray_middle,CV_RGB2GRAY);
+            cvtColor(mImGray_high,mImGray_high,CV_RGB2GRAY);
+        }
         else
+        {
             cvtColor(mImGray,mImGray,CV_BGR2GRAY);
+            cvtColor(mImGray_middle,mImGray_middle,CV_BGR2GRAY);
+            cvtColor(mImGray_high,mImGray_high,CV_BGR2GRAY);
+        }
     }
     else if(mImGray.channels()==4)
     {
         if(mbRGB)
+        {
             cvtColor(mImGray,mImGray,CV_RGBA2GRAY);
+            cvtColor(mImGray_middle,mImGray_middle,CV_RGBA2GRAY);
+            cvtColor(mImGray_high,mImGray_high,CV_RGBA2GRAY);
+        }
         else
+        {
             cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
+            cvtColor(mImGray_middle,mImGray_middle,CV_BGRA2GRAY);
+            cvtColor(mImGray_high,mImGray_high,CV_BGRA2GRAY);
+        }
     }
 
     if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
