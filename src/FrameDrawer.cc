@@ -204,6 +204,9 @@ void FrameDrawer::UpdateWAF(Tracking *pTracker)
 {
     unique_lock<mutex> lock(mMutex);
     pTracker->mImGray.copyTo(mIm);
+    pTracker->mImGray_middle.copyTo(mIm_middle);
+    pTracker->mImGray_high.copyTo(mIm_high);
+    
     mvCurrentKeys=pTracker->mCurrentFrame.mvKeys;
     N = mvCurrentKeys.size();
     mvbVO = vector<bool>(N,false);
