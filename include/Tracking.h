@@ -128,7 +128,7 @@ protected:
 
     // Map initialization for monocular
     void MonocularInitialization();
-    void MonocularInitializationWAF()
+    void MonocularInitializationWAF();
 
     void CreateInitialMapMonocular();
 
