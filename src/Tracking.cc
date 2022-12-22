@@ -1511,6 +1511,87 @@ void Tracking::CreateNewKeyFrame()
     mpLastKeyFrame = pKF;
 }
 
+void Tracking::CreateNewKeyFrameWAF()
+{
+    if(!mpLocalMapper->SetNotStop(true))
+        return;
+
+    KeyFrame* pKF = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
+
+    mpReferenceKF = pKF;
+    mCurrentFrame.mpReferenceKF = pKF;
+
+    if(mSensor!=System::MONOCULAR)
+    {
+        mCurrentFrame.UpdatePoseMatrices();
+
+        // We sort points by the measured depth by the stereo/RGBD sensor.
+        // We create all those MapPoints whose depth < mThDepth.
+        // If there are less than 100 close points we create the 100 closest.
+        vector<pair<float,int> > vDepthIdx;
+        vDepthIdx.reserve(mCurrentFrame.N);
+        for(int i=0; i<mCurrentFrame.N; i++)
+        {
+            float z = mCurrentFrame.mvDepth[i];
+            if(z>0)
+            {
+                vDepthIdx.push_back(make_pair(z,i));
+            }
+        }
+
+        if(!vDepthIdx.empty())
+        {
+            sort(vDepthIdx.begin(),vDepthIdx.end());
+
+            int nPoints = 0;
+            for(size_t j=0; j<vDepthIdx.size();j++)
+            {
+                int i = vDepthIdx[j].second;
+
+                bool bCreateNew = false;
+
+                MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
+                if(!pMP)
+                    bCreateNew = true;
+                else if(pMP->Observations()<1)
+                {
+                    bCreateNew = true;
+                    mCurrentFrame.mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
+                }
+
+                if(bCreateNew)
+                {
+                    cv::Mat x3D = mCurrentFrame.UnprojectStereo(i);
+                    MapPoint* pNewMP = new MapPoint(x3D,pKF,mpMap);
+                    pNewMP->AddObservation(pKF,i);
+                    pKF->AddMapPoint(pNewMP,i);
+                    pNewMP->ComputeDistinctiveDescriptors();
+                    pNewMP->UpdateNormalAndDepth();
+                    mpMap->AddMapPoint(pNewMP);
+
+                    mCurrentFrame.mvpMapPoints[i]=pNewMP;
+                    nPoints++;
+                }
+                else
+                {
+                    nPoints++;
+                }
+
+                if(vDepthIdx[j].first>mThDepth && nPoints>100)
+                    break;
+            }
+        }
+    }
+
+    mpLocalMapper->InsertKeyFrame(pKF);
+
+    mpLocalMapper->SetNotStop(false);
+
+    mnLastKeyFrameId = mCurrentFrame.mnId;
+    mpLastKeyFrame = pKF;
+}
+
+
 void Tracking::SearchLocalPoints()
 {
     // Do not search map points already matched
