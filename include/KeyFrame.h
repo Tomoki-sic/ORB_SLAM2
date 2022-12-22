@@ -44,7 +44,6 @@ class KeyFrame
 {
 public:
     KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB);
-
     // Pose functions
     void SetPose(const cv::Mat &Tcw);
     cv::Mat GetPose();
@@ -187,6 +186,8 @@ public:
     const int mnMaxX;
     const int mnMaxY;
     const cv::Mat mK;
+
+    KeyFrame* mpKeyFrame_middle, *mpKeyFrame_high;
 
 
     // The following variables need to be accessed trough a mutex to be thread safe.
