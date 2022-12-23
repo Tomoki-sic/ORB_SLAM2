@@ -248,11 +248,13 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     ExtractORBWAF(0,imGray);
 
     N = mvKeys.size();
+    N_middle = mvKeys_middle.size();
+    N_high = mvKeys_high.size();
 
     if(mvKeys.empty())
         return;
 
-    UndistortKeyPoints();
+    UndistortKeyPointsWAF();
 
     // Set no stereo information
     mvuRight = vector<float>(N,-1);
@@ -536,6 +538,56 @@ void Frame::UndistortKeyPointsWAF()
         kp.pt.x=mat.at<float>(i,0);
         kp.pt.y=mat.at<float>(i,1);
         mvKeysUn[i]=kp;
+    }
+    //middle
+    if(!mvKeys_middle.empty()){
+        // Fill matrix with points
+        cv::Mat mat_middle(N_middle,2,CV_32F);
+        for(int i=0; i<N_middle; i++)
+        {
+            mat_middle.at<float>(i,0)=mvKeys_middle[i].pt.x;
+            mat_middle.at<float>(i,1)=mvKeys_middle[i].pt.y;
+        }
+
+        // Undistort points
+        mat_middle=mat_middle.reshape(2);
+        cv::undistortPoints(mat_middle,mat_middle,mK,mDistCoef,cv::Mat(),mK);
+        mat_middle=mat_middle.reshape(1);
+
+        // Fill undistorted keypoint vector
+        mvKeysUn_middle.resize(N_middle);
+        for(int i=0; i<N_middle; i++)
+        {
+            cv::KeyPoint kp = mvKeys_middle[i];
+            kp.pt.x=mat_middle.at<float>(i,0);
+            kp.pt.y=mat_middle.at<float>(i,1);
+            mvKeysUn_middle[i]=kp;
+        }
+    }
+    //high
+    if(!mvKeys_high.empty()){
+        // Fill matrix with points
+        cv::Mat mat_high(N_high,2,CV_32F);
+        for(int i=0; i<N_high; i++)
+        {
+            mat_high.at<float>(i,0)=mvKeys_high[i].pt.x;
+            mat_high.at<float>(i,1)=mvKeys_high[i].pt.y;
+        }
+
+        // Undistort points
+        mat_high=mat_high.reshape(2);
+        cv::undistortPoints(mat_high,mat_high,mK,mDistCoef,cv::Mat(),mK);
+        mat_high=mat_high.reshape(1);
+
+        // Fill undistorted keypoint vector
+        mvKeysUn_high.resize(N_high);
+        for(int i=0; i<N_high; i++)
+        {
+            cv::KeyPoint kp = mvKeys_high[i];
+            kp.pt.x=mat_high.at<float>(i,0);
+            kp.pt.y=mat_high.at<float>(i,1);
+            mvKeysUn_high[i]=kp;
+        }
     }
 }
 
