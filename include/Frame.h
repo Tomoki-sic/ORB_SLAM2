@@ -56,9 +56,10 @@ public:
 
     // Constructor for Monocular cameras.
     Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth);
-
+    Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, const cv::Mat &imGray_middle, const cv::Mat &imGray_high);
     // Extract ORB on the image. 0 for left image and 1 for right image.
     void ExtractORB(int flag, const cv::Mat &im);
+    void ExtractORBWAF(int flag, const cv::Mat &im, const cv::Mat &im_middle, const cv::Mat &im_high);
 
     // Compute Bag of Words representation.
     void ComputeBoW();
@@ -103,7 +104,7 @@ public:
     ORBVocabulary* mpORBvocabulary;
 
     // Feature extractor. The right is used only in the stereo case.
-    ORBextractor* mpORBextractorLeft, *mpORBextractorRight;
+    ORBextractor* mpORBextractorLeft, *mpORBextractorRight, *mpORBextractorLeft_middle, *mpORBextractorRight_middle, *mpORBextractorLeft_high, *mpORBextractorRight_high;
 
     // Frame timestamp.
     double mTimeStamp;
@@ -134,8 +135,8 @@ public:
     // Vector of keypoints (original for visualization) and undistorted (actually used by the system).
     // In the stereo case, mvKeysUn is redundant as images must be rectified.
     // In the RGB-D case, RGB images can be distorted.
-    std::vector<cv::KeyPoint> mvKeys, mvKeysRight;
-    std::vector<cv::KeyPoint> mvKeysUn;
+    std::vector<cv::KeyPoint> mvKeys, mvKeysRight, mvKeys_middle, mvKeysRight_middle, mvKeys_high, mvKeysRight_high;
+    std::vector<cv::KeyPoint> mvKeysUn, mvKeysUn_middle, mvKeysUn_high;
 
     // Corresponding stereo coordinate and depth for each keypoint.
     // "Monocular" keypoints have a negative value.
@@ -147,7 +148,7 @@ public:
     DBoW2::FeatureVector mFeatVec;
 
     // ORB descriptor, each row associated to a keypoint.
-    cv::Mat mDescriptors, mDescriptorsRight;
+    cv::Mat mDescriptors, mDescriptorsRight, mDescriptors_middle, mDescriptorsRight_middle, mDescriptors_high, mDescriptorsRight_high;
 
     // MapPoints associated to keypoints, NULL pointer if no association.
     std::vector<MapPoint*> mvpMapPoints;
@@ -186,8 +187,6 @@ public:
     static float mnMaxY;
 
     static bool mbInitialComputations;
-    Frame *mCurrentFrame_middle, *mCurrentFrame_high;
-
 private:
 
     // Undistort keypoints given OpenCV distortion parameters.
