@@ -303,15 +303,11 @@ cv::Mat Tracking::GrabImageMonocularWAF(const cv::Mat &im, const cv::Mat &im_mid
 
     if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
     {
-        mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
-        mCurrentFrame.mCurrentFrame_middle = Frame(mImGray_middle,timestamp,mpIniORBextractor,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
-        mCurrentFrame.mCurrentFrame_high = Frame(mImGray_high,timestamp,mpIniORBextractor,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
+        mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,mImGray_middle,mImGray_high);
     }
     else
     {
-        mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
-        mCurrentFrame.mCurrentFrame_middle = Frame(mImGray_middle,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
-        mCurrentFrame.mCurrentFrame_high = Frame(mImGray_high,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
+        mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,mImGray_middle,mImGray_high);
     }
 
     TrackWAF();
@@ -1517,7 +1513,6 @@ void Tracking::CreateNewKeyFrameWAF()
         return;
 
     KeyFrame* pKF = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
-
     mpReferenceKF = pKF;
     mCurrentFrame.mpReferenceKF = pKF;
 
