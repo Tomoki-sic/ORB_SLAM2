@@ -267,7 +267,11 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     mvDepth = vector<float>(N,-1);
 
     mvpMapPoints = vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));
+    mvpMapPoints_middle = vector<MapPoint*>(N_middle,static_cast<MapPoint*>(NULL));
+    mvpMapPoints_high = vector<MapPoint*>(N_high,static_cast<MapPoint*>(NULL));
     mvbOutlier = vector<bool>(N,false);
+    mvbOutlier_middle = vector<bool>(N_middle,false);
+    mvbOutlier_high = vector<bool>(N_high,false);
 
     // This is done only for the first Frame (or after a change in the calibration)
     if(mbInitialComputations)
