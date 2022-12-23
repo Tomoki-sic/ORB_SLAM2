@@ -38,11 +38,17 @@ Frame::Frame()
 //Copy Constructor
 Frame::Frame(const Frame &frame)
     :mpORBvocabulary(frame.mpORBvocabulary), mpORBextractorLeft(frame.mpORBextractorLeft), mpORBextractorRight(frame.mpORBextractorRight),
+     mpORBextractorLeft_middle(frame.mpORBextractorLeft_middle), mpORBextractorRight_middle(frame.mpORBextractorRight_middle),
+     mpORBextractorLeft_high(frame.mpORBextractorLeft_high), mpORBextractorRight_high(frame.mpORBextractorRight_high),
      mTimeStamp(frame.mTimeStamp), mK(frame.mK.clone()), mDistCoef(frame.mDistCoef.clone()),
-     mbf(frame.mbf), mb(frame.mb), mThDepth(frame.mThDepth), N(frame.N), mvKeys(frame.mvKeys),
-     mvKeysRight(frame.mvKeysRight), mvKeysUn(frame.mvKeysUn),  mvuRight(frame.mvuRight),
-     mvDepth(frame.mvDepth), mBowVec(frame.mBowVec), mFeatVec(frame.mFeatVec),
+     mbf(frame.mbf), mb(frame.mb), mThDepth(frame.mThDepth), N(frame.N), N_middle(frame.N_middle), N_high(frame.N_high),
+     mvKeys(frame.mvKeys), mvKeys_middle(frame.mvKeys_middle), mvKeys_high(frame.mvKeys_high),
+     mvKeysRight(frame.mvKeysRight), mvKeysRight_middle(frame.mvKeysRight_high), 
+     mvKeysUn(frame.mvKeysUn), mvKeysUn_middle(frame.mvKeysUn_middle), mvKeysUn_high(frame.mvKeysUn_high),
+     mvuRight(frame.mvuRight), mvDepth(frame.mvDepth), mBowVec(frame.mBowVec), mFeatVec(frame.mFeatVec),
      mDescriptors(frame.mDescriptors.clone()), mDescriptorsRight(frame.mDescriptorsRight.clone()),
+     mDescriptors_middle(frame.mDescriptors_middle.clone()), mDescriptorsRight_middle(frame.mDescriptorsRight_middle.clone()),
+     mDescriptors_high(frame.mDescriptors_high.clone()), mDescriptorsRight_high(frame.mDescriptorsRight_high.clone()),
      mvpMapPoints(frame.mvpMapPoints), mvbOutlier(frame.mvbOutlier), mnId(frame.mnId),
      mpReferenceKF(frame.mpReferenceKF), mnScaleLevels(frame.mnScaleLevels),
      mfScaleFactor(frame.mfScaleFactor), mfLogScaleFactor(frame.mfLogScaleFactor),
@@ -245,7 +251,7 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
 
     // ORB extraction
-    ExtractORBWAF(0,imGray);
+    ExtractORBWAF(0,imGray, imGray_middle, imGray_high);
 
     N = mvKeys.size();
     N_middle = mvKeys_middle.size();
