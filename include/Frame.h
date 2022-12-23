@@ -130,7 +130,7 @@ public:
     float mThDepth;
 
     // Number of KeyPoints.
-    int N;
+    int N, N_middle, N_high;
 
     // Vector of keypoints (original for visualization) and undistorted (actually used by the system).
     // In the stereo case, mvKeysUn is redundant as images must be rectified.
