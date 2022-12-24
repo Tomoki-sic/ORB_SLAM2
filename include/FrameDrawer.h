@@ -41,6 +41,8 @@ class FrameDrawer
 {
 public:
     FrameDrawer(Map* pMap);
+    FrameDrawer(Map* pMap, Map* pMap_middle, Map* pMap_high);
+    
 
     // Update info from the last processed frame.
     void Update(Tracking *pTracker);
@@ -50,9 +52,7 @@ public:
     cv::Mat DrawFrame();
 
 protected:
-
     void DrawTextInfo(cv::Mat &im, int nState, cv::Mat &imText);
-
     // Info of the frame to be drawn
     cv::Mat mIm, mIm_middle, mIm_high;
     int N;
@@ -64,7 +64,7 @@ protected:
     vector<int> mvIniMatches;
     int mState;
 
-    Map* mpMap;
+    Map* mpMap, *mpMap_middle, *mpMap_high;
 
     std::mutex mMutex;
 };

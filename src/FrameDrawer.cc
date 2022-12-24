@@ -35,6 +35,12 @@ FrameDrawer::FrameDrawer(Map* pMap):mpMap(pMap)
     mIm = cv::Mat(480,640,CV_8UC3, cv::Scalar(0,0,0));
 }
 
+FrameDrawer::FrameDrawer(Map* pMap, Map* pMap_middle, Map* pMap_high):mpMap(pMap), mpMap_middle(pMap_middle), mpMap_high(pMap_high)
+{
+    mState=Tracking::SYSTEM_NOT_READY;
+    mIm = cv::Mat(480,640,CV_8UC3, cv::Scalar(0,0,0));
+}
+
 cv::Mat FrameDrawer::DrawFrame()
 {
     cv::Mat im;
