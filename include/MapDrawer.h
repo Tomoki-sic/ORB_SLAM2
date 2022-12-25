@@ -35,8 +35,9 @@ class MapDrawer
 {
 public:
     MapDrawer(Map* pMap, const string &strSettingPath);
+    MapDrawer(Map* pMap, Map* pMap_middle, Map* pMap_high, const string &strSettingPath);
 
-    Map* mpMap;
+    Map* mpMap, *mpMap_middle, *mpMap_high;
 
     void DrawMapPoints();
     void DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph);

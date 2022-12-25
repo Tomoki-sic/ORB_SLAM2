@@ -40,6 +40,19 @@ MapDrawer::MapDrawer(Map* pMap, const string &strSettingPath):mpMap(pMap)
     mCameraLineWidth = fSettings["Viewer.CameraLineWidth"];
 
 }
+//WAF
+MapDrawer::MapDrawer(Map* pMap, Map* pMap_middle, Map* pMap_high, const string &strSettingPath):mpMap(pMap), mpMap_middle(pMap_middle), mpMap_high(pMap_high)
+{
+    cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
+
+    mKeyFrameSize = fSettings["Viewer.KeyFrameSize"];
+    mKeyFrameLineWidth = fSettings["Viewer.KeyFrameLineWidth"];
+    mGraphLineWidth = fSettings["Viewer.GraphLineWidth"];
+    mPointSize = fSettings["Viewer.PointSize"];
+    mCameraSize = fSettings["Viewer.CameraSize"];
+    mCameraLineWidth = fSettings["Viewer.CameraLineWidth"];
+
+}
 
 void MapDrawer::DrawMapPoints()
 {
