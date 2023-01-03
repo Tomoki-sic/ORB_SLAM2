@@ -216,9 +216,22 @@ void FrameDrawer::UpdateWAF(Tracking *pTracker)
     pTracker->mImGray_high.copyTo(mIm_high);
     
     mvCurrentKeys=pTracker->mCurrentFrame.mvKeys;
+    mvCurrentKeys_middle=pTracker->mCurrentFrame.mvKeys_middle;
+    mvCurrentKeys_high=pTracker->mCurrentFrame.mvKeys_high;
+
     N = mvCurrentKeys.size();
+    N_middle = mvCurrentKeys_middle.size();
+    N_high = mvCurrentKeys_high.size();
+
     mvbVO = vector<bool>(N,false);
     mvbMap = vector<bool>(N,false);
+    
+    mvbVO_middle = vector<bool>(N_middle,false);
+    mvbMap_midle = vector<bool>(N_middle,false);
+
+    mvbVO_high = vector<bool>(N_high,false);
+    mvbMap_high = vector<bool>(N_high,false);
+    
     mbOnlyTracking = pTracker->mbOnlyTracking;
 
 
@@ -226,6 +239,10 @@ void FrameDrawer::UpdateWAF(Tracking *pTracker)
     {
         mvIniKeys=pTracker->mInitialFrame.mvKeys;
         mvIniMatches=pTracker->mvIniMatches;
+        mvIniKeys_middle=pTracker->mInitialFrame.mvKeys_middle;
+        mvIniMatches_middle=pTracker->mvIniMatches_middle;
+        mvIniKeys_high=pTracker->mInitialFrame.mvKeys_high;
+        mvIniMatches_high=pTracker->mvIniMatches_high;
     }
     else if(pTracker->mLastProcessedState==Tracking::OK)
     {
@@ -243,9 +260,35 @@ void FrameDrawer::UpdateWAF(Tracking *pTracker)
                 }
             }
         }
+        for(int i=0;i<N_middle;i++)
+        {
+            MapPoint* pMP_middle = pTracker->mCurrentFrame.mvpMapPoints_middle[i];
+            if(pMP_middle)
+            {
+                if(!pTracker->mCurrentFrame.mvbOutlier_middle[i])
+                {
+                    if(pMP_middle->Observations()>0)
+                        mvbMap_midle[i]=true;
+                    else
+                        mvbVO_middle[i]=true;
+                }
+            }
+        }
+        for(int i=0;i<N_high;i++)
+        {
+            MapPoint* pMP_high = pTracker->mCurrentFrame.mvpMapPoints_high[i];
+            if(pMP_high)
+            {
+                if(!pTracker->mCurrentFrame.mvbOutlier_high[i])
+                {
+                    if(pMP_high->Observations()>0)
+                        mvbMap_high[i]=true;
+                    else
+                        mvbVO_high[i]=true;
+                }
+            }
+        }
     }
     mState=static_cast<int>(pTracker->mLastProcessedState);
 }
-
-
 } //namespace ORB_SLAM

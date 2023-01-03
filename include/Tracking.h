@@ -103,8 +103,8 @@ public:
 
     // Initialization Variables (Monocular)
     std::vector<int> mvIniLastMatches;
-    std::vector<int> mvIniMatches;
-    std::vector<cv::Point2f> mvbPrevMatched;
+    std::vector<int> mvIniMatches, mvIniMatches_middle, mvIniMatches_high;
+    std::vector<cv::Point2f> mvbPrevMatched, mvbPrevMatched_middle, mvbPrevMatched_high;
     std::vector<cv::Point3f> mvIniP3D;
     Frame mInitialFrame;
 
@@ -134,6 +134,7 @@ protected:
     void MonocularInitializationWAF();
 
     void CreateInitialMapMonocular();
+    void CreateInitialMapMonocularWAF();
 
     void CheckReplacedInLastFrame();
     bool TrackReferenceKeyFrame();

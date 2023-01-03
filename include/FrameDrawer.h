@@ -55,13 +55,13 @@ protected:
     void DrawTextInfo(cv::Mat &im, int nState, cv::Mat &imText);
     // Info of the frame to be drawn
     cv::Mat mIm, mIm_middle, mIm_high;
-    int N;
-    vector<cv::KeyPoint> mvCurrentKeys;
-    vector<bool> mvbMap, mvbVO;
+    int N, N_middle, N_high;
+    vector<cv::KeyPoint> mvCurrentKeys, mvCurrentKeys_middle, mvCurrentKeys_high;
+    vector<bool> mvbMap, mvbMap_midle, mvbMap_high, mvbVO, mvbVO_middle, mvbVO_high;
     bool mbOnlyTracking;
     int mnTracked, mnTrackedVO;
-    vector<cv::KeyPoint> mvIniKeys;
-    vector<int> mvIniMatches;
+    vector<cv::KeyPoint> mvIniKeys, mvIniKeys_middle, mvIniKeys_high;
+    vector<int> mvIniMatches, mvIniMatches_middle, mvIniMatches_high;
     int mState;
 
     Map* mpMap, *mpMap_middle, *mpMap_high;

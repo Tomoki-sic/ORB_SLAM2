@@ -36,12 +36,14 @@ public:
 
     // Fix the reference frame
     Initializer(const Frame &ReferenceFrame, float sigma = 1.0, int iterations = 200);
+    
 
     // Computes in parallel a fundamental matrix and a homography
     // Selects a model and tries to recover the motion and the structure from motion
     bool Initialize(const Frame &CurrentFrame, const vector<int> &vMatches12,
                     cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated);
-
+    bool InitializeWAF(const Frame &CurrentFrame, const vector<int> &vMatches12, const vector<int> &vMatches12_middle, const vector<int> &vMatches12_high,
+                    cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated);
 
 private:
 
@@ -73,13 +75,13 @@ private:
 
 
     // Keypoints from Reference Frame (Frame 1)
-    vector<cv::KeyPoint> mvKeys1;
+    vector<cv::KeyPoint> mvKeys1, mvKeys1_middle, mvKeys1_high;
 
     // Keypoints from Current Frame (Frame 2)
-    vector<cv::KeyPoint> mvKeys2;
+    vector<cv::KeyPoint> mvKeys2, mvKeys2_middle, mvKeys2_high;
 
     // Current Matches from Reference to Current
-    vector<Match> mvMatches12;
+    vector<Match> mvMatches12, mvMatches12_middle, mvMatches12_high;
     vector<bool> mvbMatched1;
 
     // Calibration

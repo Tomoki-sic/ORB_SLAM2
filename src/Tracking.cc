@@ -682,7 +682,7 @@ void Tracking::TrackWAF()
         if(mSensor==System::STEREO || mSensor==System::RGBD)
             StereoInitialization();
         else
-            MonocularInitialization();
+            MonocularInitializationWAF();
 
         mpFrameDrawer->UpdateWAF(this);
 
@@ -856,7 +856,7 @@ void Tracking::TrackWAF()
 
             // Check if we need to insert a new keyframe
             if(NeedNewKeyFrame())
-                CreateNewKeyFrame();
+                CreateNewKeyFrameWAF();
 
             // We allow points with high innovation (considererd outliers by the Huber Function)
             // pass to the new keyframe, so that bundle adjustment will finally decide
@@ -1046,15 +1046,22 @@ void Tracking::MonocularInitializationWAF()
             mInitialFrame = Frame(mCurrentFrame);
             mLastFrame = Frame(mCurrentFrame);
             mvbPrevMatched.resize(mCurrentFrame.mvKeysUn.size());
+            mvbPrevMatched_middle.resize(mCurrentFrame.mvKeysUn_middle.size());
+            mvbPrevMatched_high.resize(mCurrentFrame.mvKeysUn_high.size());
             for(size_t i=0; i<mCurrentFrame.mvKeysUn.size(); i++)
                 mvbPrevMatched[i]=mCurrentFrame.mvKeysUn[i].pt;
+            for(size_t i=0; i<mCurrentFrame.mvKeysUn_middle.size(); i++)
+                mvbPrevMatched_middle[i]=mCurrentFrame.mvKeysUn_middle[i].pt;
+            for(size_t i=0; i<mCurrentFrame.mvKeysUn_high.size(); i++)
+                mvbPrevMatched_high[i]=mCurrentFrame.mvKeysUn_high[i].pt;
 
             if(mpInitializer)
                 delete mpInitializer;
 
             mpInitializer =  new Initializer(mCurrentFrame,1.0,200);
-
             fill(mvIniMatches.begin(),mvIniMatches.end(),-1);
+            fill(mvIniMatches_middle.begin(),mvIniMatches_middle.end(),-1);
+            fill(mvIniMatches_high.begin(),mvIniMatches_high.end(),-1);
 
             return;
         }
@@ -1067,6 +1074,9 @@ void Tracking::MonocularInitializationWAF()
             delete mpInitializer;
             mpInitializer = static_cast<Initializer*>(NULL);
             fill(mvIniMatches.begin(),mvIniMatches.end(),-1);
+            fill(mvIniMatches_middle.begin(),mvIniMatches_middle.end(),-1);
+            fill(mvIniMatches_high.begin(),mvIniMatches_high.end(),-1);
+
             return;
         }
 
@@ -1210,6 +1220,115 @@ void Tracking::CreateInitialMapMonocular()
 
     mState=OK;
 }
+
+void Tracking::CreateInitialMapMonocularWAF()
+{
+    // Create KeyFrames
+    KeyFrame* pKFini = new KeyFrame(mInitialFrame,mpMap,mpMap_middle,mpMap_high,mpKeyFrameDB);
+    KeyFrame* pKFcur = new KeyFrame(mCurrentFrame,mpMap,mpMap_middle,mpMap_high,mpKeyFrameDB);
+
+
+    pKFini->ComputeBoW();
+    pKFcur->ComputeBoW();
+
+    // Insert KFs in the map
+    mpMap->AddKeyFrame(pKFini);
+    mpMap->AddKeyFrame(pKFcur);
+
+    mpMap_middle->AddKeyFrame(pKFini);
+    mpMap_middle->AddKeyFrame(pKFcur);
+
+    mpMap_high->AddKeyFrame(pKFini);
+    mpMap_high->AddKeyFrame(pKFcur);
+
+    // Create MapPoints and asscoiate to keyframes
+    for(size_t i=0; i<mvIniMatches.size();i++)
+    {
+        if(mvIniMatches[i]<0)
+            continue;
+
+        //Create MapPoint.
+        cv::Mat worldPos(mvIniP3D[i]);
+
+        MapPoint* pMP = new MapPoint(worldPos,pKFcur,mpMap);
+
+        pKFini->AddMapPoint(pMP,i);
+        pKFcur->AddMapPoint(pMP,mvIniMatches[i]);
+
+        pMP->AddObservation(pKFini,i);
+        pMP->AddObservation(pKFcur,mvIniMatches[i]);
+
+        pMP->ComputeDistinctiveDescriptors();
+        pMP->UpdateNormalAndDepth();
+
+        //Fill Current Frame structure
+        mCurrentFrame.mvpMapPoints[mvIniMatches[i]] = pMP;
+        mCurrentFrame.mvbOutlier[mvIniMatches[i]] = false;
+
+        //Add to Map
+        mpMap->AddMapPoint(pMP);
+    }
+
+    // Update Connections
+    pKFini->UpdateConnections();
+    pKFcur->UpdateConnections();
+
+    // Bundle Adjustment
+    cout << "New Map created with " << mpMap->MapPointsInMap() << " points" << endl;
+
+    Optimizer::GlobalBundleAdjustemnt(mpMap,20);
+
+    // Set median depth to 1
+    float medianDepth = pKFini->ComputeSceneMedianDepth(2);
+    float invMedianDepth = 1.0f/medianDepth;
+
+    if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
+    {
+        cout << "Wrong initialization, reseting..." << endl;
+        Reset();
+        return;
+    }
+
+    // Scale initial baseline
+    cv::Mat Tc2w = pKFcur->GetPose();
+    Tc2w.col(3).rowRange(0,3) = Tc2w.col(3).rowRange(0,3)*invMedianDepth;
+    pKFcur->SetPose(Tc2w);
+
+    // Scale points
+    vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
+    for(size_t iMP=0; iMP<vpAllMapPoints.size(); iMP++)
+    {
+        if(vpAllMapPoints[iMP])
+        {
+            MapPoint* pMP = vpAllMapPoints[iMP];
+            pMP->SetWorldPos(pMP->GetWorldPos()*invMedianDepth);
+        }
+    }
+
+    mpLocalMapper->InsertKeyFrame(pKFini);
+    mpLocalMapper->InsertKeyFrame(pKFcur);
+
+    mCurrentFrame.SetPose(pKFcur->GetPose());
+    mnLastKeyFrameId=mCurrentFrame.mnId;
+    mpLastKeyFrame = pKFcur;
+
+    mvpLocalKeyFrames.push_back(pKFcur);
+    mvpLocalKeyFrames.push_back(pKFini);
+    mvpLocalMapPoints=mpMap->GetAllMapPoints();
+    mpReferenceKF = pKFcur;
+    mCurrentFrame.mpReferenceKF = pKFcur;
+
+    mLastFrame = Frame(mCurrentFrame);
+
+    mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
+
+    mpMapDrawer->SetCurrentCameraPose(pKFcur->GetPose());
+
+    mpMap->mvpKeyFrameOrigins.push_back(pKFini);
+
+    mState=OK;
+}
+
 
 void Tracking::CheckReplacedInLastFrame()
 {
@@ -1620,7 +1739,7 @@ void Tracking::CreateNewKeyFrameWAF()
     if(!mpLocalMapper->SetNotStop(true))
         return;
 
-    KeyFrame* pKF = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
+    KeyFrame* pKF = new KeyFrame(mCurrentFrame,mpMap, mpMap_middle, mpMap_high, mpKeyFrameDB);
     mpReferenceKF = pKF;
     mCurrentFrame.mpReferenceKF = pKF;
 

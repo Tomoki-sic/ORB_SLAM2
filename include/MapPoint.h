@@ -40,7 +40,9 @@ class MapPoint
 {
 public:
     MapPoint(const cv::Mat &Pos, KeyFrame* pRefKF, Map* pMap);
+    MapPoint(const cv::Mat &Pos, KeyFrame* pRefKF, Map* pMap, Map* pMap_middle, Map* pMap_high);
     MapPoint(const cv::Mat &Pos,  Map* pMap, Frame* pFrame, const int &idxF);
+
 
     void SetWorldPos(const cv::Mat &Pos);
     cv::Mat GetWorldPos();
@@ -141,7 +143,7 @@ protected:
      float mfMinDistance;
      float mfMaxDistance;
 
-     Map* mpMap;
+     Map* mpMap, *mpMap_middle, *mpMap_high;
 
      std::mutex mMutexPos;
      std::mutex mMutexFeatures;

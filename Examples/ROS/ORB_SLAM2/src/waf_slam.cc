@@ -154,7 +154,7 @@ int main(int argc, char **argv)
         ros::shutdown();
         return 1;
     }    
-    bool waf = false;
+    bool waf = true;
     ros::NodeHandle nodeHandler;
     ros::Subscriber sub;
 

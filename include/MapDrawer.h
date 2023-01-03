@@ -40,6 +40,8 @@ public:
     Map* mpMap, *mpMap_middle, *mpMap_high;
 
     void DrawMapPoints();
+    void DrawMapPointsMiddle();
+    void DrawMapPointsHigh();
     void DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph);
     void DrawCurrentCamera(pangolin::OpenGlMatrix &Twc);
     void SetCurrentCameraPose(const cv::Mat &Tcw);

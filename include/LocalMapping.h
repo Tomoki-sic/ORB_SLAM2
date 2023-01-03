@@ -41,6 +41,7 @@ class LocalMapping
 {
 public:
     LocalMapping(Map* pMap, const float bMonocular);
+    LocalMapping(Map *pMap, Map *pMap_middle, Map *pMap_high, const float bMonocular);
 
     void SetLoopCloser(LoopClosing* pLoopCloser);
 
@@ -77,6 +78,7 @@ protected:
     bool CheckNewKeyFrames();
     void ProcessNewKeyFrame();
     void CreateNewMapPoints();
+    void CreateNewMapPointsWAF();
 
     void MapPointCulling();
     void SearchInNeighbors();
@@ -99,7 +101,7 @@ protected:
     bool mbFinished;
     std::mutex mMutexFinish;
 
-    Map* mpMap;
+    Map* mpMap, *mpMap_middle, *mpMap_high;
 
     LoopClosing* mpLoopCloser;
     Tracking* mpTracker;

@@ -67,10 +67,17 @@ public:
 
     // Matching for the Map Initialization (only used in the monocular case)
     int SearchForInitialization(Frame &F1, Frame &F2, std::vector<cv::Point2f> &vbPrevMatched, std::vector<int> &vnMatches12, int windowSize=10);
+    int SearchForInitializationWAF(Frame &F1, Frame &F2, std::vector<cv::Point2f> &vbPrevMatched, std::vector<cv::Point2f> &vbPrevMatched_middle, std::vector<cv::Point2f> &vbPrevMatched_high, std::vector<int> &vnMatches12, std::vector<int> &vnMatches12_middle, std::vector<int> &vnMatches12_high, int windowSize=10);
+
 
     // Matching to triangulate new MapPoints. Check Epipolar Constraint.
     int SearchForTriangulation(KeyFrame *pKF1, KeyFrame* pKF2, cv::Mat F12,
                                std::vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo);
+    int SearchForTriangulationMiddle(KeyFrame *pKF1, KeyFrame* pKF2, cv::Mat F12,
+                               std::vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo);
+    int SearchForTriangulationHigh(KeyFrame *pKF1, KeyFrame* pKF2, cv::Mat F12,
+                               std::vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo);
+
 
     // Search matches between MapPoints seen in KF1 and KF2 transforming by a Sim3 [s12*R12|t12]
     // In the stereo and RGB-D case, s12=1

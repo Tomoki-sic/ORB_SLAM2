@@ -44,7 +44,7 @@ class KeyFrame
 {
 public:
     KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB);
-    KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB,KeyFrame *pKeyFrame_middle, KeyFrame *pKeyFrame_high);
+    KeyFrame(Frame &F, Map *pMap, Map *pMap_middle, Map *pMap_high, KeyFrameDatabase *pKFDB);
     // Pose functions
     void SetPose(const cv::Mat &Tcw);
     cv::Mat GetPose();
@@ -158,13 +158,15 @@ public:
 
     // Number of KeyPoints
     const int N;
+    int N_middle;
+    int N_high;
 
     // KeyPoints, stereo coordinate and descriptors (all associated by an index)
-    const std::vector<cv::KeyPoint> mvKeys;
-    const std::vector<cv::KeyPoint> mvKeysUn;
+    const std::vector<cv::KeyPoint> mvKeys, mvKeys_middle, mvKeys_high;
+    const std::vector<cv::KeyPoint> mvKeysUn, mvKeysUn_middle, mvKeysUn_high;
     const std::vector<float> mvuRight; // negative value for monocular points
     const std::vector<float> mvDepth; // negative value for monocular points
-    const cv::Mat mDescriptors;
+    const cv::Mat mDescriptors, mDescriptors_middle, mDescriptors_high;
 
     //BoW
     DBoW2::BowVector mBowVec;
@@ -187,10 +189,6 @@ public:
     const int mnMaxX;
     const int mnMaxY;
     const cv::Mat mK;
-
-    KeyFrame* mpKeyFrame_middle, *mpKeyFrame_high;
-
-
     // The following variables need to be accessed trough a mutex to be thread safe.
 protected:
 
@@ -202,7 +200,7 @@ protected:
     cv::Mat Cw; // Stereo middel point. Only for visualization
 
     // MapPoints associated to keypoints
-    std::vector<MapPoint*> mvpMapPoints;
+    std::vector<MapPoint*> mvpMapPoints, mvpMapPoints_middle, mvpMapPoints_high;
 
     // BoW
     KeyFrameDatabase* mpKeyFrameDB;
@@ -228,7 +226,7 @@ protected:
 
     float mHalfBaseline; // Only for visualization
 
-    Map* mpMap;
+    Map* mpMap, *mpMap_middle, *mpMap_high;
 
     std::mutex mMutexPose;
     std::mutex mMutexConnections;
