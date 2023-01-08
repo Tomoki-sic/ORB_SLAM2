@@ -44,6 +44,15 @@ LoopClosing::LoopClosing(Map *pMap, KeyFrameDatabase *pDB, ORBVocabulary *pVoc, 
     mnCovisibilityConsistencyTh = 3;
 }
 
+LoopClosing::LoopClosing(Map *pMap, Map *pMap_middle, Map *pMap_high, KeyFrameDatabase *pDB, ORBVocabulary *pVoc, const bool bFixScale):
+    mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap), mpMap_middle(pMap_middle), mpMap_high(pMap_high),
+    mpKeyFrameDB(pDB), mpORBVocabulary(pVoc), mpMatchedKF(NULL), mLastLoopKFid(0), mbRunningGBA(false), mbFinishedGBA(true),
+    mbStopGBA(false), mpThreadGBA(NULL), mbFixScale(bFixScale), mnFullBAIdx(0)
+{
+    mnCovisibilityConsistencyTh = 3;
+}
+
+
 void LoopClosing::SetTracker(Tracking *pTracker)
 {
     mpTracker=pTracker;

@@ -67,7 +67,9 @@ public:
 
     // Matching for the Map Initialization (only used in the monocular case)
     int SearchForInitialization(Frame &F1, Frame &F2, std::vector<cv::Point2f> &vbPrevMatched, std::vector<int> &vnMatches12, int windowSize=10);
-    int SearchForInitializationWAF(Frame &F1, Frame &F2, std::vector<cv::Point2f> &vbPrevMatched, std::vector<cv::Point2f> &vbPrevMatched_middle, std::vector<cv::Point2f> &vbPrevMatched_high, std::vector<int> &vnMatches12, std::vector<int> &vnMatches12_middle, std::vector<int> &vnMatches12_high, int windowSize=10);
+    //int SearchForInitializationWAF(Frame &F1, Frame &F2, std::vector<cv::Point2f> &vbPrevMatched, std::vector<cv::Point2f> &vbPrevMatched_middle, std::vector<cv::Point2f> &vbPrevMatched_high, std::vector<int> &vnMatches12, std::vector<int> &vnMatches12_middle, std::vector<int> &vnMatches12_high, , int *nmatches_middle, int *nmatches_high, int windowSize=10);
+    int SearchForInitializationMiddle(Frame &F1, Frame &F2, std::vector<cv::Point2f> &vbPrevMatched_middle, std::vector<int> &vnMatches12_middle, int windowSize=10);
+    int SearchForInitializationHigh(Frame &F1, Frame &F2, std::vector<cv::Point2f> &vbPrevMatched_high, std::vector<int> &vnMatches12_high, int windowSize=10);
 
 
     // Matching to triangulate new MapPoints. Check Epipolar Constraint.

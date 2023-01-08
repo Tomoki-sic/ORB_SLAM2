@@ -519,101 +519,19 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
     return nmatches;
 }
 
-int ORBmatcher::SearchForInitializationWAF(Frame &F1, Frame &F2, vector<cv::Point2f> &vbPrevMatched, vector<cv::Point2f> &vbPrevMatched_middle, vector<cv::Point2f> &vbPrevMatched_high, vector<int> &vnMatches12, vector<int> &vnMatches12_middle, vector<int> &vnMatches12_high, int windowSize)
+int ORBmatcher::SearchForInitializationMiddle(Frame &F1, Frame &F2, vector<cv::Point2f> &vbPrevMatched_middle, vector<int> &vnMatches12_middle, int windowSize)
 {
     int nmatches=0;
-    int nmatches_middle=0;
-    int nmatches_high=0;
-
-    vnMatches12 = vector<int>(F1.mvKeysUn.size(),-1);
     vnMatches12_middle = vector<int>(F1.mvKeysUn_middle.size(),-1);
-    vnMatches12_high = vector<int>(F1.mvKeysUn_high.size(),-1);
 
-    vector<int> rotHist[HISTO_LENGTH];
+    vector<int> rotHist_middle[HISTO_LENGTH];
     for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(500);
+        rotHist_middle[i].reserve(500);
     const float factor = 1.0f/HISTO_LENGTH;
 
-    vector<int> vMatchedDistance(F2.mvKeysUn.size(),INT_MAX);
     vector<int> vMatchedDistance_middle(F2.mvKeysUn_middle.size(),INT_MAX);
-    vector<int> vMatchedDistance_high(F2.mvKeysUn_high.size(),INT_MAX);
-    
-    vector<int> vnMatches21(F2.mvKeysUn.size(),-1);
     vector<int> vnMatches21_middle(F2.mvKeysUn_middle.size(),-1);
-    vector<int> vnMatches21_high(F2.mvKeysUn_high.size(),-1);
 
-    for(size_t i1=0, iend1=F1.mvKeysUn.size(); i1<iend1; i1++)
-    {
-        cv::KeyPoint kp1 = F1.mvKeysUn[i1];
-        int level1 = kp1.octave;
-        if(level1>0)
-            continue;
-
-        vector<size_t> vIndices2 = F2.GetFeaturesInArea(vbPrevMatched[i1].x,vbPrevMatched[i1].y, windowSize,level1,level1);
-
-        if(vIndices2.empty())
-            continue;
-
-        cv::Mat d1 = F1.mDescriptors.row(i1);
-
-        int bestDist = INT_MAX;
-        int bestDist2 = INT_MAX;
-        int bestIdx2 = -1;
-
-        for(vector<size_t>::iterator vit=vIndices2.begin(); vit!=vIndices2.end(); vit++)
-        {
-            size_t i2 = *vit;
-
-            cv::Mat d2 = F2.mDescriptors.row(i2);
-
-            int dist = DescriptorDistance(d1,d2);
-
-            if(vMatchedDistance[i2]<=dist)
-                continue;
-
-            if(dist<bestDist)
-            {
-                bestDist2=bestDist;
-                bestDist=dist;
-                bestIdx2=i2;
-            }
-            else if(dist<bestDist2)
-            {
-                bestDist2=dist;
-            }
-        }
-
-        if(bestDist<=TH_LOW)
-        {
-            if(bestDist<(float)bestDist2*mfNNratio)
-            {
-                if(vnMatches21[bestIdx2]>=0)
-                {
-                    vnMatches12[vnMatches21[bestIdx2]]=-1;
-                    nmatches--;
-                }
-                vnMatches12[i1]=bestIdx2;
-                vnMatches21[bestIdx2]=i1;
-                vMatchedDistance[bestIdx2]=bestDist;
-                nmatches++;
-
-                if(mbCheckOrientation)
-                {
-                    float rot = F1.mvKeysUn[i1].angle-F2.mvKeysUn[bestIdx2].angle;
-                    if(rot<0.0)
-                        rot+=360.0f;
-                    int bin = round(rot*factor);
-                    if(bin==HISTO_LENGTH)
-                        bin=0;
-                    assert(bin>=0 && bin<HISTO_LENGTH);
-                    rotHist[bin].push_back(i1);
-                }
-            }
-        }
-
-    }
-
-    //middle
     for(size_t i1=0, iend1=F1.mvKeysUn_middle.size(); i1<iend1; i1++)
     {
         cv::KeyPoint kp1 = F1.mvKeysUn_middle[i1];
@@ -661,13 +579,13 @@ int ORBmatcher::SearchForInitializationWAF(Frame &F1, Frame &F2, vector<cv::Poin
             {
                 if(vnMatches21_middle[bestIdx2]>=0)
                 {
-                    vnMatches12_middle[vnMatches21[bestIdx2]]=-1;
-                    nmatches_middle--;
+                    vnMatches12_middle[vnMatches21_middle[bestIdx2]]=-1;
+                    nmatches--;
                 }
                 vnMatches12_middle[i1]=bestIdx2;
                 vnMatches21_middle[bestIdx2]=i1;
                 vMatchedDistance_middle[bestIdx2]=bestDist;
-                nmatches_middle++;
+                nmatches++;
 
                 if(mbCheckOrientation)
                 {
@@ -678,14 +596,59 @@ int ORBmatcher::SearchForInitializationWAF(Frame &F1, Frame &F2, vector<cv::Poin
                     if(bin==HISTO_LENGTH)
                         bin=0;
                     assert(bin>=0 && bin<HISTO_LENGTH);
-                    rotHist[bin].push_back(i1);
+                    rotHist_middle[bin].push_back(i1);
                 }
             }
         }
 
     }
 
-    //high
+    if(mbCheckOrientation)
+    {
+        int ind1=-1;
+        int ind2=-1;
+        int ind3=-1;
+
+        ComputeThreeMaxima(rotHist_middle,HISTO_LENGTH,ind1,ind2,ind3);
+
+        for(int i=0; i<HISTO_LENGTH; i++)
+        {
+            if(i==ind1 || i==ind2 || i==ind3)
+                continue;
+            for(size_t j=0, jend=rotHist_middle[i].size(); j<jend; j++)
+            {
+                int idx1 = rotHist_middle[i][j];
+                if(vnMatches12_middle[idx1]>=0)
+                {
+                    vnMatches12_middle[idx1]=-1;
+                    nmatches--;
+                }
+            }
+        }
+
+    }
+
+    //Update prev matched
+    for(size_t i1=0, iend1=vnMatches12_middle.size(); i1<iend1; i1++)
+        if(vnMatches12_middle[i1]>=0)
+            vbPrevMatched_middle[i1]=F2.mvKeysUn_middle[vnMatches12_middle[i1]].pt;
+
+    return nmatches;
+}
+
+int ORBmatcher::SearchForInitializationHigh(Frame &F1, Frame &F2, vector<cv::Point2f> &vbPrevMatched_high, vector<int> &vnMatches12_high, int windowSize)
+{
+    int nmatches=0;
+    vnMatches12_high = vector<int>(F1.mvKeysUn_high.size(),-1);
+
+    vector<int> rotHist_high[HISTO_LENGTH];
+    for(int i=0;i<HISTO_LENGTH;i++)
+        rotHist_high[i].reserve(500);
+    const float factor = 1.0f/HISTO_LENGTH;
+
+    vector<int> vMatchedDistance_high(F2.mvKeysUn_high.size(),INT_MAX);
+    vector<int> vnMatches21_high(F2.mvKeysUn_high.size(),-1);
+
     for(size_t i1=0, iend1=F1.mvKeysUn_high.size(); i1<iend1; i1++)
     {
         cv::KeyPoint kp1 = F1.mvKeysUn_high[i1];
@@ -733,13 +696,13 @@ int ORBmatcher::SearchForInitializationWAF(Frame &F1, Frame &F2, vector<cv::Poin
             {
                 if(vnMatches21_high[bestIdx2]>=0)
                 {
-                    vnMatches12_high[vnMatches21[bestIdx2]]=-1;
-                    nmatches_high--;
+                    vnMatches12_high[vnMatches21_high[bestIdx2]]=-1;
+                    nmatches--;
                 }
                 vnMatches12_high[i1]=bestIdx2;
                 vnMatches21_high[bestIdx2]=i1;
                 vMatchedDistance_high[bestIdx2]=bestDist;
-                nmatches_high++;
+                nmatches++;
 
                 if(mbCheckOrientation)
                 {
@@ -750,12 +713,12 @@ int ORBmatcher::SearchForInitializationWAF(Frame &F1, Frame &F2, vector<cv::Poin
                     if(bin==HISTO_LENGTH)
                         bin=0;
                     assert(bin>=0 && bin<HISTO_LENGTH);
-                    rotHist[bin].push_back(i1);
+                    rotHist_high[bin].push_back(i1);
                 }
             }
         }
-    }
 
+    }
 
     if(mbCheckOrientation)
     {
@@ -763,18 +726,18 @@ int ORBmatcher::SearchForInitializationWAF(Frame &F1, Frame &F2, vector<cv::Poin
         int ind2=-1;
         int ind3=-1;
 
-        ComputeThreeMaxima(rotHist,HISTO_LENGTH,ind1,ind2,ind3);
+        ComputeThreeMaxima(rotHist_high,HISTO_LENGTH,ind1,ind2,ind3);
 
         for(int i=0; i<HISTO_LENGTH; i++)
         {
             if(i==ind1 || i==ind2 || i==ind3)
                 continue;
-            for(size_t j=0, jend=rotHist[i].size(); j<jend; j++)
+            for(size_t j=0, jend=rotHist_high[i].size(); j<jend; j++)
             {
-                int idx1 = rotHist[i][j];
-                if(vnMatches12[idx1]>=0)
+                int idx1 = rotHist_high[i][j];
+                if(vnMatches12_high[idx1]>=0)
                 {
-                    vnMatches12[idx1]=-1;
+                    vnMatches12_high[idx1]=-1;
                     nmatches--;
                 }
             }
@@ -783,12 +746,314 @@ int ORBmatcher::SearchForInitializationWAF(Frame &F1, Frame &F2, vector<cv::Poin
     }
 
     //Update prev matched
-    for(size_t i1=0, iend1=vnMatches12.size(); i1<iend1; i1++)
-        if(vnMatches12[i1]>=0)
-            vbPrevMatched[i1]=F2.mvKeysUn[vnMatches12[i1]].pt;
+    for(size_t i1=0, iend1=vnMatches12_high.size(); i1<iend1; i1++)
+        if(vnMatches12_high[i1]>=0)
+            vbPrevMatched_high[i1]=F2.mvKeysUn_high[vnMatches12_high[i1]].pt;
 
     return nmatches;
 }
+
+
+// int ORBmatcher::SearchForInitializationWAF(Frame &F1, Frame &F2, vector<cv::Point2f> &vbPrevMatched, vector<cv::Point2f> &vbPrevMatched_middle, vector<cv::Point2f> &vbPrevMatched_high, vector<int> &vnMatches12, vector<int> &vnMatches12_middle, vector<int> &vnMatches12_high, int *nmatches_middle, int *nmatches_high, int windowSize)
+// {
+//     int nmatches=0;
+//     nmatches_middle=0;
+//     nmatches_high=0;
+
+//     vnMatches12 = vector<int>(F1.mvKeysUn.size(),-1);
+//     vnMatches12_middle = vector<int>(F1.mvKeysUn_middle.size(),-1);
+//     vnMatches12_high = vector<int>(F1.mvKeysUn_high.size(),-1);
+
+//     vector<int> rotHist[HISTO_LENGTH];
+//     vector<int> rotHist_middle[HISTO_LENGTH];
+//     vector<int> rotHist_high[HISTO_LENGTH];
+
+//     for(int i=0;i<HISTO_LENGTH;i++){
+//         rotHist[i].reserve(500);
+//         rotHist_middle[i].reserve(500);
+//         rotHist_high[i].reserve(500);
+//     }
+//     const float factor = 1.0f/HISTO_LENGTH;
+
+//     vector<int> vMatchedDistance(F2.mvKeysUn.size(),INT_MAX);
+//     vector<int> vMatchedDistance_middle(F2.mvKeysUn_middle.size(),INT_MAX);
+//     vector<int> vMatchedDistance_high(F2.mvKeysUn_high.size(),INT_MAX);
+    
+//     vector<int> vnMatches21(F2.mvKeysUn.size(),-1);
+//     vector<int> vnMatches21_middle(F2.mvKeysUn_middle.size(),-1);
+//     vector<int> vnMatches21_high(F2.mvKeysUn_high.size(),-1);
+
+//     for(size_t i1=0, iend1=F1.mvKeysUn.size(); i1<iend1; i1++)
+//     {
+//         cv::KeyPoint kp1 = F1.mvKeysUn[i1];
+//         int level1 = kp1.octave;
+//         if(level1>0)
+//             continue;
+
+//         vector<size_t> vIndices2 = F2.GetFeaturesInArea(vbPrevMatched[i1].x,vbPrevMatched[i1].y, windowSize,level1,level1);
+
+//         if(vIndices2.empty())
+//             continue;
+
+//         cv::Mat d1 = F1.mDescriptors.row(i1);
+
+//         int bestDist = INT_MAX;
+//         int bestDist2 = INT_MAX;
+//         int bestIdx2 = -1;
+
+//         for(vector<size_t>::iterator vit=vIndices2.begin(); vit!=vIndices2.end(); vit++)
+//         {
+//             size_t i2 = *vit;
+
+//             cv::Mat d2 = F2.mDescriptors.row(i2);
+
+//             int dist = DescriptorDistance(d1,d2);
+
+//             if(vMatchedDistance[i2]<=dist)
+//                 continue;
+
+//             if(dist<bestDist)
+//             {
+//                 bestDist2=bestDist;
+//                 bestDist=dist;
+//                 bestIdx2=i2;
+//             }
+//             else if(dist<bestDist2)
+//             {
+//                 bestDist2=dist;
+//             }
+//         }
+
+//         if(bestDist<=TH_LOW)
+//         {
+//             if(bestDist<(float)bestDist2*mfNNratio)
+//             {
+//                 if(vnMatches21[bestIdx2]>=0)
+//                 {
+//                     vnMatches12[vnMatches21[bestIdx2]]=-1;
+//                     nmatches--;
+//                 }
+//                 vnMatches12[i1]=bestIdx2;
+//                 vnMatches21[bestIdx2]=i1;
+//                 vMatchedDistance[bestIdx2]=bestDist;
+//                 nmatches++;
+
+//                 if(mbCheckOrientation)
+//                 {
+//                     float rot = F1.mvKeysUn[i1].angle-F2.mvKeysUn[bestIdx2].angle;
+//                     if(rot<0.0)
+//                         rot+=360.0f;
+//                     int bin = round(rot*factor);
+//                     if(bin==HISTO_LENGTH)
+//                         bin=0;
+//                     assert(bin>=0 && bin<HISTO_LENGTH);
+//                     rotHist[bin].push_back(i1);
+//                 }
+//             }
+//         }
+
+//     }
+
+//     //middle
+//     for(size_t i1=0, iend1=F1.mvKeysUn_middle.size(); i1<iend1; i1++)
+//     {
+//         cv::KeyPoint kp1 = F1.mvKeysUn_middle[i1];
+//         int level1 = kp1.octave;
+//         if(level1>0)
+//             continue;
+
+//         vector<size_t> vIndices2 = F2.GetFeaturesInArea(vbPrevMatched_middle[i1].x,vbPrevMatched_middle[i1].y, windowSize,level1,level1);
+
+//         if(vIndices2.empty())
+//             continue;
+
+//         cv::Mat d1 = F1.mDescriptors_middle.row(i1);
+
+//         int bestDist = INT_MAX;
+//         int bestDist2 = INT_MAX;
+//         int bestIdx2 = -1;
+
+//         for(vector<size_t>::iterator vit=vIndices2.begin(); vit!=vIndices2.end(); vit++)
+//         {
+//             size_t i2 = *vit;
+
+//             cv::Mat d2 = F2.mDescriptors_middle.row(i2);
+
+//             int dist = DescriptorDistance(d1,d2);
+
+//             if(vMatchedDistance_middle[i2]<=dist)
+//                 continue;
+
+//             if(dist<bestDist)
+//             {
+//                 bestDist2=bestDist;
+//                 bestDist=dist;
+//                 bestIdx2=i2;
+//             }
+//             else if(dist<bestDist2)
+//             {
+//                 bestDist2=dist;
+//             }
+//         }
+
+//         if(bestDist<=TH_LOW)
+//         {
+//             if(bestDist<(float)bestDist2*mfNNratio)
+//             {
+//                 if(vnMatches21_middle[bestIdx2]>=0)
+//                 {
+//                     vnMatches12_middle[vnMatches21[bestIdx2]]=-1;
+//                     nmatches_middle--;
+//                 }
+//                 vnMatches12_middle[i1]=bestIdx2;
+//                 vnMatches21_middle[bestIdx2]=i1;
+//                 vMatchedDistance_middle[bestIdx2]=bestDist;
+//                 nmatches_middle++;
+
+//                 if(mbCheckOrientation)
+//                 {
+//                     float rot = F1.mvKeysUn_middle[i1].angle-F2.mvKeysUn_middle[bestIdx2].angle;
+//                     if(rot<0.0)
+//                         rot+=360.0f;
+//                     int bin = round(rot*factor);
+//                     if(bin==HISTO_LENGTH)
+//                         bin=0;
+//                     assert(bin>=0 && bin<HISTO_LENGTH);
+//                     rotHist[bin].push_back(i1);
+//                 }
+//             }
+//         }
+
+//     }
+
+//     //high
+//     for(size_t i1=0, iend1=F1.mvKeysUn_high.size(); i1<iend1; i1++)
+//     {
+//         cv::KeyPoint kp1 = F1.mvKeysUn_high[i1];
+//         int level1 = kp1.octave;
+//         if(level1>0)
+//             continue;
+
+//         vector<size_t> vIndices2 = F2.GetFeaturesInArea(vbPrevMatched_high[i1].x,vbPrevMatched_high[i1].y, windowSize,level1,level1);
+
+//         if(vIndices2.empty())
+//             continue;
+
+//         cv::Mat d1 = F1.mDescriptors_high.row(i1);
+
+//         int bestDist = INT_MAX;
+//         int bestDist2 = INT_MAX;
+//         int bestIdx2 = -1;
+
+//         for(vector<size_t>::iterator vit=vIndices2.begin(); vit!=vIndices2.end(); vit++)
+//         {
+//             size_t i2 = *vit;
+
+//             cv::Mat d2 = F2.mDescriptors_high.row(i2);
+
+//             int dist = DescriptorDistance(d1,d2);
+
+//             if(vMatchedDistance_high[i2]<=dist)
+//                 continue;
+
+//             if(dist<bestDist)
+//             {
+//                 bestDist2=bestDist;
+//                 bestDist=dist;
+//                 bestIdx2=i2;
+//             }
+//             else if(dist<bestDist2)
+//             {
+//                 bestDist2=dist;
+//             }
+//         }
+
+//         if(bestDist<=TH_LOW)
+//         {
+//             if(bestDist<(float)bestDist2*mfNNratio)
+//             {
+//                 if(vnMatches21_high[bestIdx2]>=0)
+//                 {
+//                     vnMatches12_high[vnMatches21[bestIdx2]]=-1;
+//                     nmatches_high--;
+//                 }
+//                 vnMatches12_high[i1]=bestIdx2;
+//                 vnMatches21_high[bestIdx2]=i1;
+//                 vMatchedDistance_high[bestIdx2]=bestDist;
+//                 nmatches_high++;
+
+//                 if(mbCheckOrientation)
+//                 {
+//                     float rot = F1.mvKeysUn_high[i1].angle-F2.mvKeysUn_high[bestIdx2].angle;
+//                     if(rot<0.0)
+//                         rot+=360.0f;
+//                     int bin = round(rot*factor);
+//                     if(bin==HISTO_LENGTH)
+//                         bin=0;
+//                     assert(bin>=0 && bin<HISTO_LENGTH);
+//                     rotHist[bin].push_back(i1);
+//                 }
+//             }
+//         }
+//     }
+//     if(mbCheckOrientation)
+//     {
+//         int ind1=-1;
+//         int ind2=-1;
+//         int ind3=-1;
+
+//         ComputeThreeMaxima(rotHist,HISTO_LENGTH,ind1,ind2,ind3);
+
+//         for(int i=0; i<HISTO_LENGTH; i++)
+//         {
+//             if(i==ind1 || i==ind2 || i==ind3)
+//                 continue;
+//             for(size_t j=0, jend=rotHist[i].size(); j<jend; j++)
+//             {
+//                 int idx1 = rotHist[i][j];
+//                 if(vnMatches12[idx1]>=0)
+//                 {
+//                     vnMatches12[idx1]=-1;
+//                     nmatches--;
+//                 }
+//             }
+//             //middle
+//             for(size_t j=0, jend=rotHist_middle[i].size(); j<jend; j++)
+//             {
+//                 int idx1 = rotHist_middle[i][j];
+//                 if(vnMatches12_middle[idx1]>=0)
+//                 {
+//                     vnMatches12_middle[idx1]=-1;
+//                     nmatches_middle--;
+//                 }
+//             }
+//             //high
+//             for(size_t j=0, jend=rotHist_high[i].size(); j<jend; j++)
+//             {
+//                 int idx1 = rotHist_high[i][j];
+//                 if(vnMatches12_high[idx1]>=0)
+//                 {
+//                     vnMatches12_high[idx1]=-1;
+//                     nmatches--;
+//                 }
+//             }
+
+//         }
+
+//     }
+
+//     //Update prev matched
+//     for(size_t i1=0, iend1=vnMatches12.size(); i1<iend1; i1++)
+//         if(vnMatches12[i1]>=0)
+//             vbPrevMatched[i1]=F2.mvKeysUn[vnMatches12[i1]].pt;
+//     for(size_t i1=0, iend1=vnMatches12_middle.size(); i1<iend1; i1++)
+//         if(vnMatches12_middle[i1]>=0)
+//             vbPrevMatched_middle[i1]=F2.mvKeysUn_middle[vnMatches12_middle[i1]].pt;
+//     for(size_t i1=0, iend1=vnMatches12_high.size(); i1<iend1; i1++)
+//         if(vnMatches12_high[i1]>=0)
+//             vbPrevMatched_high[i1]=F2.mvKeysUn_high[vnMatches12_high[i1]].pt;
+//     return nmatches;
+// }
 
 
 int ORBmatcher::SearchByBoW(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &vpMatches12)

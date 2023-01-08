@@ -1083,6 +1083,8 @@ void Tracking::MonocularInitializationWAF()
         // Find correspondences
         ORBmatcher matcher(0.9,true);
         int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,100);
+        int nmatches_middle = matcher.SearchForInitializationMiddle(mInitialFrame,mCurrentFrame,mvbPrevMatched_middle,mvIniMatches_middle,100);
+        int nmatches_high = matcher.SearchForInitializationHigh(mInitialFrame,mCurrentFrame,mvbPrevMatched_high,mvIniMatches_high,100);
 
         // Check if there are enough correspondences
         if(nmatches<100)
@@ -1094,9 +1096,9 @@ void Tracking::MonocularInitializationWAF()
 
         cv::Mat Rcw; // Current Camera Rotation
         cv::Mat tcw; // Current Camera Translation
-        vector<bool> vbTriangulated; // Triangulated Correspondences (mvIniMatches)
+        vector<bool> vbTriangulated, vbTriangulated_middle, vbTriangulated_high; // Triangulated Correspondences (mvIniMatches)
 
-        if(mpInitializer->Initialize(mCurrentFrame, mvIniMatches, Rcw, tcw, mvIniP3D, vbTriangulated))
+        if(mpInitializer->InitializeWAF(mCurrentFrame, mvIniMatches, mvIniMatches_middle, mvIniMatches_high, Rcw, tcw, mvIniP3D, vbTriangulated, vbTriangulated_middle, vbTriangulated_high))
         {
             for(size_t i=0, iend=mvIniMatches.size(); i<iend;i++)
             {
@@ -1104,6 +1106,22 @@ void Tracking::MonocularInitializationWAF()
                 {
                     mvIniMatches[i]=-1;
                     nmatches--;
+                }
+            }
+            for(size_t i=0, iend=mvIniMatches_middle.size(); i<iend;i++)
+            {
+                if(mvIniMatches_middle[i]>=0 && !vbTriangulated_middle[i])
+                {
+                    mvIniMatches_middle[i]=-1;
+                    nmatches_middle--;
+                }
+            }
+            for(size_t i=0, iend=mvIniMatches_high.size(); i<iend;i++)
+            {
+                if(mvIniMatches_high[i]>=0 && !vbTriangulated_high[i])
+                {
+                    mvIniMatches_high[i]=-1;
+                    nmatches_high--;
                 }
             }
 

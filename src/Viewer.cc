@@ -80,10 +80,24 @@ void Viewer::Run()
                 pangolin::ModelViewLookAt(mViewpointX,mViewpointY,mViewpointZ, 0,0,0,0.0,-1.0, 0.0)
                 );
 
+
     // Add named OpenGL viewport to window and provide 3D Handler
     pangolin::View& d_cam = pangolin::CreateDisplay()
-            .SetBounds(0.0, 1.0, pangolin::Attach::Pix(175), 1.0, -1024.0f/768.0f)
+            .SetBounds(0.5, 1.0, pangolin::Attach::Pix(175), 0.5, -1024.0f/768.0f)
             .SetHandler(new pangolin::Handler3D(s_cam));
+
+    pangolin::View& d_cam_middle = pangolin::CreateDisplay()
+            .SetBounds(0.0, 0.5, pangolin::Attach::Pix(175), 0.5, -1024.0f/768.0f)
+            .SetHandler(new pangolin::Handler3D(s_cam));
+
+    pangolin::View& d_cam_high = pangolin::CreateDisplay()
+            .SetBounds(0.0, 0.5, 0.5, 1.0, -1024.0f/768.0f)
+            .SetHandler(new pangolin::Handler3D(s_cam));
+
+    pangolin::View& d_cam_middle_and_high = pangolin::CreateDisplay()
+            .SetBounds(0.5, 1.0, 0.5, 1.0, -1024.0f/768.0f)
+            .SetHandler(new pangolin::Handler3D(s_cam));
+
 
     pangolin::OpenGlMatrix Twc;
     Twc.SetIdentity();
@@ -132,6 +146,23 @@ void Viewer::Run()
             mpMapDrawer->DrawKeyFrames(menuShowKeyFrames,menuShowGraph);
         if(menuShowPoints)
             mpMapDrawer->DrawMapPoints();
+
+        d_cam_middle.Activate(s_cam);
+        mpMapDrawer->DrawCurrentCamera(Twc);
+        if(menuShowKeyFrames || menuShowGraph)
+            mpMapDrawer->DrawKeyFrames(menuShowKeyFrames,menuShowGraph);
+        if(menuShowPoints)
+            mpMapDrawer->DrawMapPointsMiddle();
+
+        d_cam_high.Activate(s_cam);
+        mpMapDrawer->DrawCurrentCamera(Twc);
+        if(menuShowKeyFrames || menuShowGraph)
+            mpMapDrawer->DrawKeyFrames(menuShowKeyFrames,menuShowGraph);
+
+        d_cam_middle_and_high.Activate(s_cam);
+        mpMapDrawer->DrawCurrentCamera(Twc);
+        if(menuShowKeyFrames || menuShowGraph)
+            mpMapDrawer->DrawKeyFrames(menuShowKeyFrames,menuShowGraph);
 
         pangolin::FinishFrame();
 

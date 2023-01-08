@@ -52,6 +52,7 @@ public:
 public:
 
     LoopClosing(Map* pMap, KeyFrameDatabase* pDB, ORBVocabulary* pVoc,const bool bFixScale);
+    LoopClosing(Map *pMap, Map *pMap_middle, Map *pMap_high, KeyFrameDatabase *pDB, ORBVocabulary *pVoc, const bool bFixScale);
 
     void SetTracker(Tracking* pTracker);
 
@@ -104,7 +105,7 @@ protected:
     bool mbFinished;
     std::mutex mMutexFinish;
 
-    Map* mpMap;
+    Map* mpMap, *mpMap_middle, *mpMap_high;
     Tracking* mpTracker;
 
     KeyFrameDatabase* mpKeyFrameDB;

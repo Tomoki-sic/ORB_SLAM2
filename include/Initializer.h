@@ -43,25 +43,42 @@ public:
     bool Initialize(const Frame &CurrentFrame, const vector<int> &vMatches12,
                     cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated);
     bool InitializeWAF(const Frame &CurrentFrame, const vector<int> &vMatches12, const vector<int> &vMatches12_middle, const vector<int> &vMatches12_high,
-                    cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated);
+                    cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high);
 
 private:
 
     void FindHomography(vector<bool> &vbMatchesInliers, float &score, cv::Mat &H21);
+    void FindHomographyWAF(vector<bool> &vbMatchesInliers, vector<bool> &vbMatchesInliers_middle, vector<bool> &vbMatchesInliers_high, float &score, cv::Mat &H21);
+ 
     void FindFundamental(vector<bool> &vbInliers, float &score, cv::Mat &F21);
+    void FindFundamentalWAF(vector<bool> &vbMatchesInliers,vector<bool> &vbMatchesInliers_mdddle,vector<bool> &vbMatchesInliers_high, float &score, cv::Mat &F21);
+
 
     cv::Mat ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv::Point2f> &vP2);
     cv::Mat ComputeF21(const vector<cv::Point2f> &vP1, const vector<cv::Point2f> &vP2);
 
     float CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vector<bool> &vbMatchesInliers, float sigma);
+    float CheckHomographyMiddle(const cv::Mat &H21_middle, const cv::Mat &H12_middle, vector<bool> &vbMatchesInliers_middle, float sigma);
+    float CheckHomographyHigh(const cv::Mat &H21_high, const cv::Mat &H12_high, vector<bool> &vbMatchesInliers_high, float sigma);
 
     float CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesInliers, float sigma);
+    float CheckFundamentalMiddle(const cv::Mat &F21_middle, vector<bool> &vbMatchesInliers_middle, float sigma);
+    float CheckFundamentalHigh(const cv::Mat &F21_high, vector<bool> &vbMatchesInliers_high, float sigma);
+
+    
 
     bool ReconstructF(vector<bool> &vbMatchesInliers, cv::Mat &F21, cv::Mat &K,
                       cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, float minParallax, int minTriangulated);
 
+    bool ReconstructF_WAF(vector<bool> &vbMatchesInliers, vector<bool> &vbMatchesInliers_middle, vector<bool> &vbMatchesInliers_high, cv::Mat &F21, cv::Mat &K,
+                            cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high, float minParallax, int minTriangulated);
+
+
     bool ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv::Mat &K,
                       cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, float minParallax, int minTriangulated);
+    bool ReconstructH_WAF(vector<bool> &vbMatchesInliers, vector<bool> &vbMatchesInliers_middle, vector<bool> &vbMatchesInliers_high, cv::Mat &H21, cv::Mat &K,
+                      cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high, float minParallax, int minTriangulated);
+
 
     void Triangulate(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &P1, const cv::Mat &P2, cv::Mat &x3D);
 
@@ -82,7 +99,7 @@ private:
 
     // Current Matches from Reference to Current
     vector<Match> mvMatches12, mvMatches12_middle, mvMatches12_high;
-    vector<bool> mvbMatched1;
+    vector<bool> mvbMatched1, mvbMatched1_middle, mvbMatched1_high;
 
     // Calibration
     cv::Mat mK;
@@ -94,7 +111,7 @@ private:
     int mMaxIterations;
 
     // Ransac sets
-    vector<vector<size_t> > mvSets;   
+    vector<vector<size_t> > mvSets, mvSets_middle, mvSets_high;   
 
 };
 
