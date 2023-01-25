@@ -122,7 +122,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
 }
 
 bool Initializer::InitializeWAF(const Frame &CurrentFrame, const vector<int> &vMatches12, const vector<int> &vMatches12_middle, const vector<int> &vMatches12_high,
-                    cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high)
+                    cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<cv::Point3f> &vP3D_middle, vector<cv::Point3f> &vP3D_high, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high)
 {
     // Fill structures with current keypoints and matches with reference frame
     // Reference Frame: 1, Current Frame: 2
@@ -258,9 +258,9 @@ bool Initializer::InitializeWAF(const Frame &CurrentFrame, const vector<int> &vM
 
     // Try to reconstruct from homography or fundamental depending on the ratio (0.40-0.45)
     if(RH>0.40)
-        return ReconstructH_WAF(vbMatchesInliersH, vbMatchesInliersH_middle, vbMatchesInliersH_high,H,mK,R21,t21,vP3D,vbTriangulated, vbTriangulated_middle, vbTriangulated_high,1.0,50);
+        return ReconstructH_WAF(vbMatchesInliersH, vbMatchesInliersH_middle, vbMatchesInliersH_high,H,mK,R21,t21,vP3D, vP3D_middle, vP3D_high,vbTriangulated, vbTriangulated_middle, vbTriangulated_high,1.0,50);
     else //if(pF_HF>0.6)
-        return ReconstructF_WAF(vbMatchesInliersF, vbMatchesInliersF_middle, vbMatchesInliersF_high,F,mK,R21,t21,vP3D,vbTriangulated, vbTriangulated_middle, vbTriangulated_high,1.0,50);
+        return ReconstructF_WAF(vbMatchesInliersF, vbMatchesInliersF_middle, vbMatchesInliersF_high,F,mK,R21,t21,vP3D, vP3D_middle, vP3D_high,vbTriangulated, vbTriangulated_middle, vbTriangulated_high,1.0,50);
 
     return false;
 }
@@ -1217,7 +1217,7 @@ bool Initializer::ReconstructF(vector<bool> &vbMatchesInliers, cv::Mat &F21, cv:
 }
 
 bool Initializer::ReconstructF_WAF(vector<bool> &vbMatchesInliers, vector<bool> &vbMatchesInliers_middle, vector<bool> &vbMatchesInliers_high, cv::Mat &F21, cv::Mat &K,
-                            cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high, float minParallax, int minTriangulated)
+                            cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<cv::Point3f> &vP3D_middle,vector<cv::Point3f> &vP3D_high, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high, float minParallax, int minTriangulated)
 {
     int N=0, N_middle=0, N_high=0;
     for(size_t i=0, iend = vbMatchesInliers.size() ; i<iend; i++)
@@ -1301,6 +1301,8 @@ bool Initializer::ReconstructF_WAF(vector<bool> &vbMatchesInliers, vector<bool> 
         if(parallax1>minParallax)
         {
             vP3D = vP3D1;
+            vP3D_middle = vP3D1_middle;
+            vP3D_high = vP3D1_high;
             vbTriangulated = vbTriangulated1;
             vbTriangulated_middle = vbTriangulated1_middle;
             vbTriangulated_high = vbTriangulated1_high;
@@ -1314,6 +1316,8 @@ bool Initializer::ReconstructF_WAF(vector<bool> &vbMatchesInliers, vector<bool> 
         if(parallax2>minParallax)
         {
             vP3D = vP3D2;
+            vP3D_middle = vP3D2_middle;
+            vP3D_high = vP3D2_high;
             vbTriangulated = vbTriangulated2;
             vbTriangulated_middle = vbTriangulated2_middle;
             vbTriangulated_high = vbTriangulated2_high;
@@ -1327,6 +1331,8 @@ bool Initializer::ReconstructF_WAF(vector<bool> &vbMatchesInliers, vector<bool> 
         if(parallax3>minParallax)
         {
             vP3D = vP3D3;
+            vP3D_middle = vP3D3_middle;
+            vP3D_high = vP3D3_high;
             vbTriangulated = vbTriangulated3;
             vbTriangulated_middle = vbTriangulated3_middle;
             vbTriangulated_high = vbTriangulated3_high;
@@ -1340,6 +1346,8 @@ bool Initializer::ReconstructF_WAF(vector<bool> &vbMatchesInliers, vector<bool> 
         if(parallax4>minParallax)
         {
             vP3D = vP3D4;
+            vP3D_middle = vP3D4_middle;
+            vP3D_high = vP3D4_high;
             vbTriangulated = vbTriangulated4;
             vbTriangulated_middle = vbTriangulated4_middle;
             vbTriangulated_high = vbTriangulated4_high;
@@ -1518,7 +1526,7 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
 
 
 bool Initializer::ReconstructH_WAF(vector<bool> &vbMatchesInliers, vector<bool> &vbMatchesInliers_middle, vector<bool> &vbMatchesInliers_high, cv::Mat &H21, cv::Mat &K,
-                      cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high, float minParallax, int minTriangulated)
+                      cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<cv::Point3f> &vP3D_middle, vector<cv::Point3f> &vP3D_high, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high, float minParallax, int minTriangulated)
 {
     int N=0, N_middle=0, N_high=0;
     for(size_t i=0, iend = vbMatchesInliers.size() ; i<iend; i++)
@@ -1709,6 +1717,8 @@ bool Initializer::ReconstructH_WAF(vector<bool> &vbMatchesInliers, vector<bool> 
         vR[bestSolutionIdx].copyTo(R21);
         vt[bestSolutionIdx].copyTo(t21);
         vP3D = bestP3D;
+        vP3D_middle = bestP3D_middle;
+        vP3D_high = bestP3D_high;
         vbTriangulated = bestTriangulated;
         vbTriangulated_middle = bestTriangulated_middle;
         vbTriangulated_high = bestTriangulated_high;

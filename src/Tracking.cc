@@ -418,7 +418,7 @@ cv::Mat Tracking::GrabImageMonocularWAF(const cv::Mat &im, const cv::Mat &im_mid
         mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,mImGray_middle,mImGray_high);
     }
 
-    TrackWAF();
+    Track();
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -676,6 +676,7 @@ void Tracking::TrackWAF()
 
     // Get Map Mutex -> Map cannot be changed
     unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
+    cout << "test " << endl;
 
     if(mState==NOT_INITIALIZED)
     {
@@ -1098,7 +1099,7 @@ void Tracking::MonocularInitializationWAF()
         cv::Mat tcw; // Current Camera Translation
         vector<bool> vbTriangulated, vbTriangulated_middle, vbTriangulated_high; // Triangulated Correspondences (mvIniMatches)
 
-        if(mpInitializer->InitializeWAF(mCurrentFrame, mvIniMatches, mvIniMatches_middle, mvIniMatches_high, Rcw, tcw, mvIniP3D, vbTriangulated, vbTriangulated_middle, vbTriangulated_high))
+        if(mpInitializer->InitializeWAF(mCurrentFrame, mvIniMatches, mvIniMatches_middle, mvIniMatches_high, Rcw, tcw, mvIniP3D, mvIniP3D_middle, mvIniP3D_high, vbTriangulated, vbTriangulated_middle, vbTriangulated_high))
         {
             for(size_t i=0, iend=mvIniMatches.size(); i<iend;i++)
             {
@@ -1132,7 +1133,7 @@ void Tracking::MonocularInitializationWAF()
             tcw.copyTo(Tcw.rowRange(0,3).col(3));
             mCurrentFrame.SetPose(Tcw);
 
-            CreateInitialMapMonocular();
+            CreateInitialMapMonocularWAF();
         }
     }
 }
@@ -1245,7 +1246,6 @@ void Tracking::CreateInitialMapMonocularWAF()
     KeyFrame* pKFini = new KeyFrame(mInitialFrame,mpMap,mpMap_middle,mpMap_high,mpKeyFrameDB);
     KeyFrame* pKFcur = new KeyFrame(mCurrentFrame,mpMap,mpMap_middle,mpMap_high,mpKeyFrameDB);
 
-
     pKFini->ComputeBoW();
     pKFcur->ComputeBoW();
 
@@ -1286,12 +1286,67 @@ void Tracking::CreateInitialMapMonocularWAF()
         //Add to Map
         mpMap->AddMapPoint(pMP);
     }
+    // Create MapPoints and asscoiate to keyframes
+    for(size_t i=0; i<mvIniMatches_middle.size();i++)
+    {
+        if(mvIniMatches_middle[i]<0)
+            continue;
+
+        //Create MapPoint.
+        cv::Mat worldPos(mvIniP3D_middle[i]);
+
+        MapPoint* pMP = new MapPoint(worldPos,pKFcur,mpMap_middle);
+
+        pKFini->AddMapPointMiddle(pMP,i);
+        pKFcur->AddMapPointMiddle(pMP,mvIniMatches_middle[i]);
+
+        pMP->AddObservation(pKFini,i);
+        pMP->AddObservation(pKFcur,mvIniMatches_middle[i]);
+
+        pMP->ComputeDistinctiveDescriptors();
+        pMP->UpdateNormalAndDepth();
+
+        //Fill Current Frame structure
+        mCurrentFrame.mvpMapPoints_middle[mvIniMatches_middle[i]] = pMP;
+        mCurrentFrame.mvbOutlier_middle[mvIniMatches_middle[i]] = false;
+
+        //Add to Map
+        mpMap_middle->AddMapPoint(pMP);
+    }
+
+    for(size_t i=0; i<mvIniMatches_high.size();i++)
+    {
+        if(mvIniMatches_high[i]<0)
+            continue;
+
+        //Create MapPoint.
+        cv::Mat worldPos(mvIniP3D_high[i]);
+
+        MapPoint* pMP = new MapPoint(worldPos,pKFcur,mpMap_high);
+
+        pKFini->AddMapPointMiddle(pMP,i);
+        pKFcur->AddMapPointMiddle(pMP,mvIniMatches_high[i]);
+
+        pMP->AddObservation(pKFini,i);
+        pMP->AddObservation(pKFcur,mvIniMatches_high[i]);
+
+        pMP->ComputeDistinctiveDescriptors();
+        pMP->UpdateNormalAndDepth();
+
+        //Fill Current Frame structure
+        mCurrentFrame.mvpMapPoints_high[mvIniMatches_high[i]] = pMP;
+        mCurrentFrame.mvbOutlier_high[mvIniMatches_high[i]] = false;
+
+        //Add to Map
+        mpMap_high->AddMapPoint(pMP);
+    }
 
     // Update Connections
     pKFini->UpdateConnections();
     pKFcur->UpdateConnections();
 
     // Bundle Adjustment
+    cout << mvIniMatches_middle.size() << endl;
     cout << "New Map created with " << mpMap->MapPointsInMap() << " points" << endl;
 
     Optimizer::GlobalBundleAdjustemnt(mpMap,20);

@@ -43,7 +43,7 @@ public:
     bool Initialize(const Frame &CurrentFrame, const vector<int> &vMatches12,
                     cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated);
     bool InitializeWAF(const Frame &CurrentFrame, const vector<int> &vMatches12, const vector<int> &vMatches12_middle, const vector<int> &vMatches12_high,
-                    cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high);
+                    cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<cv::Point3f> &vP3D_middle, vector<cv::Point3f> &vP3D_high, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high);
 
 private:
 
@@ -71,13 +71,13 @@ private:
                       cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, float minParallax, int minTriangulated);
 
     bool ReconstructF_WAF(vector<bool> &vbMatchesInliers, vector<bool> &vbMatchesInliers_middle, vector<bool> &vbMatchesInliers_high, cv::Mat &F21, cv::Mat &K,
-                            cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high, float minParallax, int minTriangulated);
+                            cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<cv::Point3f> &vP3D_middle, vector<cv::Point3f> &vP3D_high, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high, float minParallax, int minTriangulated);
 
 
     bool ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv::Mat &K,
                       cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, float minParallax, int minTriangulated);
     bool ReconstructH_WAF(vector<bool> &vbMatchesInliers, vector<bool> &vbMatchesInliers_middle, vector<bool> &vbMatchesInliers_high, cv::Mat &H21, cv::Mat &K,
-                      cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high, float minParallax, int minTriangulated);
+                      cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<cv::Point3f> &vP3D_middle, vector<cv::Point3f> &vP3D_high, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high, float minParallax, int minTriangulated);
 
 
     void Triangulate(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &P1, const cv::Mat &P2, cv::Mat &x3D);

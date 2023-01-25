@@ -246,6 +246,13 @@ void KeyFrame::AddMapPoint(MapPoint *pMP, const size_t &idx)
     mvpMapPoints[idx]=pMP;
 }
 
+void KeyFrame::AddMapPointMiddle(MapPoint *pMP, const size_t &idx)
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    mvpMapPoints_middle[idx]=pMP;
+}
+
+
 void KeyFrame::EraseMapPointMatch(const size_t &idx)
 {
     unique_lock<mutex> lock(mMutexFeatures);

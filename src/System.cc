@@ -393,7 +393,7 @@ cv::Mat System::TrackMonocularWAF(const cv::Mat &im, const cv::Mat &im_middle, c
     }
     }
 
-    cv::Mat Tcw = mpTracker->GrabImageMonocular(im,timestamp);
+    cv::Mat Tcw = mpTracker->GrabImageMonocularWAF(im,im_middle, im_high, timestamp);
 
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;

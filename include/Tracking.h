@@ -105,7 +105,7 @@ public:
     std::vector<int> mvIniLastMatches;
     std::vector<int> mvIniMatches, mvIniMatches_middle, mvIniMatches_high;
     std::vector<cv::Point2f> mvbPrevMatched, mvbPrevMatched_middle, mvbPrevMatched_high;
-    std::vector<cv::Point3f> mvIniP3D;
+    std::vector<cv::Point3f> mvIniP3D, mvIniP3D_middle, mvIniP3D_high;
     Frame mInitialFrame;
 
     // Lists used to recover the full camera trajectory at the end of the execution.

@@ -82,6 +82,8 @@ public:
 
     // MapPoint observation functions
     void AddMapPoint(MapPoint* pMP, const size_t &idx);
+    void AddMapPointMiddle(MapPoint* pMP, const size_t &idx);
+    void AddMapPointHigh(MapPoint* pMP, const size_t &idx);
     void EraseMapPointMatch(const size_t &idx);
     void EraseMapPointMatch(MapPoint* pMP);
     void ReplaceMapPointMatch(const size_t &idx, MapPoint* pMP);
