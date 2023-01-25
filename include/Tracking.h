@@ -166,8 +166,8 @@ protected:
     LoopClosing* mpLoopClosing;
 
     //ORB
-    ORBextractor* mpORBextractorLeft, *mpORBextractorRight;
-    ORBextractor* mpIniORBextractor;
+    ORBextractor* mpORBextractorLeft, *mpORBextractorLeft_middle, *mpORBextractorLeft_high, *mpORBextractorRight;
+    ORBextractor* mpIniORBextractor, *mpIniORBextractor_middle, *mpIniORBextractor_high;
 
     //BoW
     ORBVocabulary* mpORBVocabulary;
@@ -179,7 +179,7 @@ protected:
     //Local Map
     KeyFrame* mpReferenceKF;
     std::vector<KeyFrame*> mvpLocalKeyFrames;
-    std::vector<MapPoint*> mvpLocalMapPoints;
+    std::vector<MapPoint*> mvpLocalMapPoints, mvpLocalMapPoints_middle, mvpLocalMapPoints_high;
     
     // System
     System* mpSystem;

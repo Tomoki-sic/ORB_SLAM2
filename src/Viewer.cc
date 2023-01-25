@@ -158,6 +158,8 @@ void Viewer::Run()
         mpMapDrawer->DrawCurrentCamera(Twc);
         if(menuShowKeyFrames || menuShowGraph)
             mpMapDrawer->DrawKeyFrames(menuShowKeyFrames,menuShowGraph);
+        if(menuShowPoints)
+            mpMapDrawer->DrawMapPointsHigh();
 
         d_cam_middle_and_high.Activate(s_cam);
         mpMapDrawer->DrawCurrentCamera(Twc);

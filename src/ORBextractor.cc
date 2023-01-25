@@ -1045,7 +1045,6 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 { 
     if(_image.empty())
         return;
-
     Mat image = _image.getMat();
     assert(image.type() == CV_8UC1 );
 

@@ -134,8 +134,8 @@ void MapDrawer::DrawMapPointsMiddle()
 
 void MapDrawer::DrawMapPointsHigh()
 {
-    const vector<MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
-    const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
+    const vector<MapPoint*> &vpMPs = mpMap_high->GetAllMapPoints();
+    const vector<MapPoint*> &vpRefMPs = mpMap_high->GetReferenceMapPoints();
 
     set<MapPoint*> spRefMPs(vpRefMPs.begin(), vpRefMPs.end());
 

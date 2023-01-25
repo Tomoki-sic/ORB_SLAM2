@@ -45,7 +45,7 @@ Frame::Frame(const Frame &frame)
      mvKeys(frame.mvKeys), mvKeys_middle(frame.mvKeys_middle), mvKeys_high(frame.mvKeys_high),
      mvKeysRight(frame.mvKeysRight), mvKeysRight_middle(frame.mvKeysRight_high), 
      mvKeysUn(frame.mvKeysUn), mvKeysUn_middle(frame.mvKeysUn_middle), mvKeysUn_high(frame.mvKeysUn_high),
-     mvuRight(frame.mvuRight), mvDepth(frame.mvDepth), mBowVec(frame.mBowVec), mFeatVec(frame.mFeatVec),
+     mvuRight(frame.mvuRight), mvDepth(frame.mvDepth), mvDepth_middle(frame.mvDepth_middle),mvDepth_high(frame.mvDepth_high), mBowVec(frame.mBowVec), mFeatVec(frame.mFeatVec),
      mDescriptors(frame.mDescriptors.clone()), mDescriptorsRight(frame.mDescriptorsRight.clone()),
      mDescriptors_middle(frame.mDescriptors_middle.clone()), mDescriptorsRight_middle(frame.mDescriptorsRight_middle.clone()),
      mDescriptors_high(frame.mDescriptors_high.clone()), mDescriptorsRight_high(frame.mDescriptorsRight_high.clone()),
@@ -236,8 +236,8 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 }
 
 //WAF
-Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, const cv::Mat &imGray_middle, const cv::Mat &imGray_high):
-    mpORBvocabulary(voc),mpORBextractorLeft(extractor),mpORBextractorRight(static_cast<ORBextractor*>(NULL)),
+Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor, ORBextractor* extractor_middle, ORBextractor* extractor_high,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, const cv::Mat &imGray_middle, const cv::Mat &imGray_high):
+    mpORBvocabulary(voc),mpORBextractorLeft(extractor), mpORBextractorLeft_middle(extractor_middle), mpORBextractorLeft_high(extractor_high),mpORBextractorRight(static_cast<ORBextractor*>(NULL)), mpORBextractorRight_middle(static_cast<ORBextractor*>(NULL)), mpORBextractorRight_high(static_cast<ORBextractor*>(NULL)),
     mTimeStamp(timeStamp), mK(K.clone()),mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth)
 {
     // Frame ID
@@ -251,7 +251,6 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     mvInvScaleFactors = mpORBextractorLeft->GetInverseScaleFactors();
     mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
     mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
-
     // ORB extraction
     ExtractORBWAF(0,imGray, imGray_middle, imGray_high);
 
@@ -267,6 +266,8 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     // Set no stereo information
     mvuRight = vector<float>(N,-1);
     mvDepth = vector<float>(N,-1);
+    mvDepth_middle = vector<float>(N_middle,-1);
+    mvDepth_high = vector<float>(N_high,-1);
 
     mvpMapPoints = vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));
     mvpMapPoints_middle = vector<MapPoint*>(N_middle,static_cast<MapPoint*>(NULL));
@@ -332,10 +333,11 @@ void Frame::ExtractORBWAF(int flag, const cv::Mat &im, const cv::Mat &im_middle,
         (*mpORBextractorLeft_middle)(im_middle,cv::Mat(),mvKeys_middle,mDescriptors_middle);
         (*mpORBextractorLeft_high)(im_high,cv::Mat(),mvKeys_high,mDescriptors_high);
     }
-    else
+    else{
         (*mpORBextractorRight)(im,cv::Mat(),mvKeysRight,mDescriptorsRight);
         (*mpORBextractorRight_middle)(im_middle,cv::Mat(),mvKeysRight_middle,mDescriptorsRight_middle);
         (*mpORBextractorRight_high)(im_high,cv::Mat(),mvKeysRight_high,mDescriptorsRight_high);
+    }
 }
 
 void Frame::SetPose(cv::Mat Tcw)
@@ -848,5 +850,38 @@ cv::Mat Frame::UnprojectStereo(const int &i)
     else
         return cv::Mat();
 }
+
+cv::Mat Frame::UnprojectStereoMiddle(const int &i)
+{
+    const float z = mvDepth_middle[i];
+    if(z>0)
+    {
+        const float u = mvKeysUn_middle[i].pt.x;
+        const float v = mvKeysUn_middle[i].pt.y;
+        const float x = (u-cx)*z*invfx;
+        const float y = (v-cy)*z*invfy;
+        cv::Mat x3Dc = (cv::Mat_<float>(3,1) << x, y, z);
+        return mRwc*x3Dc+mOw;
+    }
+    else
+        return cv::Mat();
+}
+
+cv::Mat Frame::UnprojectStereoHigh(const int &i)
+{
+    const float z = mvDepth_high[i];
+    if(z>0)
+    {
+        const float u = mvKeysUn_high[i].pt.x;
+        const float v = mvKeysUn_high[i].pt.y;
+        const float x = (u-cx)*z*invfx;
+        const float y = (v-cy)*z*invfy;
+        cv::Mat x3Dc = (cv::Mat_<float>(3,1) << x, y, z);
+        return mRwc*x3Dc+mOw;
+    }
+    else
+        return cv::Mat();
+}
+
 
 } //namespace ORB_SLAM

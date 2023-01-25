@@ -42,8 +42,13 @@ public:
     // Selects a model and tries to recover the motion and the structure from motion
     bool Initialize(const Frame &CurrentFrame, const vector<int> &vMatches12,
                     cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated);
-    bool InitializeWAF(const Frame &CurrentFrame, const vector<int> &vMatches12, const vector<int> &vMatches12_middle, const vector<int> &vMatches12_high,
+    bool InitializeWAF(const Frame &CurrentFrame, const vector<int> &vMatches12, const vector<int> &vMatches12_middle, const vector<int> &vMatches12_high, 
+                    cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated);
+
+    bool InitializeWAF2(const Frame &CurrentFrame, const vector<int> &vMatches12, const vector<int> &vMatches12_middle, const vector<int> &vMatches12_high,
                     cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<cv::Point3f> &vP3D_middle, vector<cv::Point3f> &vP3D_high, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high);
+
+    void setIniP3D(vector<cv::Point3f> &vP3D_middle,vector<cv::Point3f> &vP3D_high, cv::Mat &Rcw_set, cv::Mat &tcw_set);
 
 private:
 
@@ -76,7 +81,9 @@ private:
 
     bool ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv::Mat &K,
                       cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, float minParallax, int minTriangulated);
-    bool ReconstructH_WAF(vector<bool> &vbMatchesInliers, vector<bool> &vbMatchesInliers_middle, vector<bool> &vbMatchesInliers_high, cv::Mat &H21, cv::Mat &K,
+
+
+    bool ReconstructH_WAF2(vector<bool> &vbMatchesInliers, vector<bool> &vbMatchesInliers_middle, vector<bool> &vbMatchesInliers_high, cv::Mat &H21, cv::Mat &K,
                       cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<cv::Point3f> &vP3D_middle, vector<cv::Point3f> &vP3D_high, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high, float minParallax, int minTriangulated);
 
 
@@ -87,6 +94,8 @@ private:
     int CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::KeyPoint> &vKeys1, const vector<cv::KeyPoint> &vKeys2,
                        const vector<Match> &vMatches12, vector<bool> &vbInliers,
                        const cv::Mat &K, vector<cv::Point3f> &vP3D, float th2, vector<bool> &vbGood, float &parallax);
+
+
 
     void DecomposeE(const cv::Mat &E, cv::Mat &R1, cv::Mat &R2, cv::Mat &t);
 

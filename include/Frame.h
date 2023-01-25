@@ -56,7 +56,7 @@ public:
 
     // Constructor for Monocular cameras.
     Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth);
-    Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, const cv::Mat &imGray_middle, const cv::Mat &imGray_high);
+    Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor, ORBextractor* extractor_middle, ORBextractor* extractor_high,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, const cv::Mat &imGray_middle, const cv::Mat &imGray_high);
     // Extract ORB on the image. 0 for left image and 1 for right image.
     void ExtractORB(int flag, const cv::Mat &im);
     void ExtractORBWAF(int flag, const cv::Mat &im, const cv::Mat &im_middle, const cv::Mat &im_high);
@@ -98,6 +98,9 @@ public:
 
     // Backprojects a keypoint (if stereo/depth info available) into 3D world coordinates.
     cv::Mat UnprojectStereo(const int &i);
+    cv::Mat UnprojectStereoMiddle(const int &i);
+    cv::Mat UnprojectStereoHigh(const int &i);
+    
 
 public:
     // Vocabulary used for relocalization.
@@ -141,7 +144,7 @@ public:
     // Corresponding stereo coordinate and depth for each keypoint.
     // "Monocular" keypoints have a negative value.
     std::vector<float> mvuRight;
-    std::vector<float> mvDepth;
+    std::vector<float> mvDepth, mvDepth_middle, mvDepth_high;
 
     // Bag of Words Vector structures.
     DBoW2::BowVector mBowVec;

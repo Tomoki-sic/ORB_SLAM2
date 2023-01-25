@@ -120,9 +120,8 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
 
     return false;
 }
-
-bool Initializer::InitializeWAF(const Frame &CurrentFrame, const vector<int> &vMatches12, const vector<int> &vMatches12_middle, const vector<int> &vMatches12_high,
-                    cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<cv::Point3f> &vP3D_middle, vector<cv::Point3f> &vP3D_high, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high)
+bool Initializer::InitializeWAF(const Frame &CurrentFrame, const vector<int> &vMatches12, const vector<int> &vMatches12_middle, const vector<int> &vMatches12_high, cv::Mat &R21, cv::Mat &t21,
+                             vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated)
 {
     // Fill structures with current keypoints and matches with reference frame
     // Reference Frame: 1, Current Frame: 2
@@ -142,6 +141,118 @@ bool Initializer::InitializeWAF(const Frame &CurrentFrame, const vector<int> &vM
     mvMatches12_high.reserve(mvKeys2_high.size());
     mvbMatched1_high.resize(mvKeys1_high.size());
 
+    for(size_t i=0, iend=vMatches12.size();i<iend; i++)
+    {
+        if(vMatches12[i]>=0)
+        {
+            mvMatches12.push_back(make_pair(i,vMatches12[i]));
+            mvbMatched1[i]=true;
+        }
+        else
+            mvbMatched1[i]=false;
+    }
+
+    for(size_t i=0, iend=vMatches12_middle.size();i<iend; i++)
+    {
+        if(vMatches12_middle[i]>=0)
+        {
+            mvMatches12_middle.push_back(make_pair(i,vMatches12_middle[i]));
+            mvbMatched1_middle[i]=true;
+        }
+        else
+            mvbMatched1_middle[i]=false;
+    }
+
+    for(size_t i=0, iend=vMatches12_high.size();i<iend; i++)
+    {
+        if(vMatches12_high[i]>=0)
+        {
+            mvMatches12_high.push_back(make_pair(i,vMatches12_high[i]));
+            mvbMatched1_high[i]=true;
+        }
+        else
+            mvbMatched1_high[i]=false;
+    }
+
+    const int N = mvMatches12.size();
+
+    // Indices for minimum set selection
+    vector<size_t> vAllIndices;
+    vAllIndices.reserve(N);
+    vector<size_t> vAvailableIndices;
+
+    for(int i=0; i<N; i++)
+    {
+        vAllIndices.push_back(i);
+    }
+
+    // Generate sets of 8 points for each RANSAC iteration
+    mvSets = vector< vector<size_t> >(mMaxIterations,vector<size_t>(8,0));
+
+    DUtils::Random::SeedRandOnce(0);
+
+    for(int it=0; it<mMaxIterations; it++)
+    {
+        vAvailableIndices = vAllIndices;
+
+        // Select a minimum set
+        for(size_t j=0; j<8; j++)
+        {
+            int randi = DUtils::Random::RandomInt(0,vAvailableIndices.size()-1);
+            int idx = vAvailableIndices[randi];
+
+            mvSets[it][j] = idx;
+
+            vAvailableIndices[randi] = vAvailableIndices.back();
+            vAvailableIndices.pop_back();
+        }
+    }
+
+    // Launch threads to compute in parallel a fundamental matrix and a homography
+    vector<bool> vbMatchesInliersH, vbMatchesInliersF;
+    float SH, SF;
+    cv::Mat H, F;
+
+    thread threadH(&Initializer::FindHomography,this,ref(vbMatchesInliersH), ref(SH), ref(H));
+    thread threadF(&Initializer::FindFundamental,this,ref(vbMatchesInliersF), ref(SF), ref(F));
+
+    // Wait until both threads have finished
+    threadH.join();
+    threadF.join();
+
+    // Compute ratio of scores
+    float RH = SH/(SH+SF);
+
+    // Try to reconstruct from homography or fundamental depending on the ratio (0.40-0.45)
+    if(RH>0.40)
+        return ReconstructH(vbMatchesInliersH,H,mK,R21,t21,vP3D,vbTriangulated,1.0,50);
+    else //if(pF_HF>0.6)
+        return ReconstructF(vbMatchesInliersF,F,mK,R21,t21,vP3D,vbTriangulated,1.0,50);
+
+    return false;
+}
+
+
+bool Initializer::InitializeWAF2(const Frame &CurrentFrame, const vector<int> &vMatches12, const vector<int> &vMatches12_middle, const vector<int> &vMatches12_high,
+                    cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<cv::Point3f> &vP3D_middle, vector<cv::Point3f> &vP3D_high, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high)
+{
+    // Fill structures with current keypoints and matches with reference frame
+    // Reference Frame: 1, Current Frame: 2
+    mvKeys2 = CurrentFrame.mvKeysUn;
+    mvKeys2_middle = CurrentFrame.mvKeysUn_middle;
+    mvKeys2_high = CurrentFrame.mvKeysUn_high;
+
+    mvMatches12.clear();
+    mvMatches12.reserve(mvKeys2.size());
+    mvbMatched1.resize(mvKeys1.size());
+
+    mvMatches12_middle.clear();
+    mvMatches12_middle.reserve(mvKeys2_middle.size());
+    mvbMatched1_middle.resize(mvKeys1_middle.size());
+
+    mvMatches12_high.clear();
+    mvMatches12_high.reserve(mvKeys2_high.size());
+    mvbMatched1_high.resize(mvKeys1_high.size());
     for(size_t i=0, iend=vMatches12.size();i<iend; i++)
     {
         if(vMatches12[i]>=0)
@@ -209,6 +320,7 @@ bool Initializer::InitializeWAF(const Frame &CurrentFrame, const vector<int> &vM
 
     DUtils::Random::SeedRandOnce(0);
 
+
     for(int it=0; it<mMaxIterations; it++)
     {
         vAvailableIndices = vAllIndices;
@@ -238,14 +350,12 @@ bool Initializer::InitializeWAF(const Frame &CurrentFrame, const vector<int> &vM
             vAvailableIndices_high.pop_back();
         }
     }
-
     // Launch threads to compute in parallel a fundamental matrix and a homography
     vector<bool> vbMatchesInliersH, vbMatchesInliersF;
     vector<bool> vbMatchesInliersH_middle, vbMatchesInliersF_middle;
     vector<bool> vbMatchesInliersH_high, vbMatchesInliersF_high;
     float SH, SF;
     cv::Mat H, F;
-
     thread threadH(&Initializer::FindHomographyWAF,this,ref(vbMatchesInliersH), ref(vbMatchesInliersH_middle), ref(vbMatchesInliersH_high), ref(SH), ref(H));
     thread threadF(&Initializer::FindFundamentalWAF,this,ref(vbMatchesInliersF), ref(vbMatchesInliersF_middle), ref(vbMatchesInliersF_high), ref(SF), ref(F));
 
@@ -255,13 +365,12 @@ bool Initializer::InitializeWAF(const Frame &CurrentFrame, const vector<int> &vM
 
     // Compute ratio of scores
     float RH = SH/(SH+SF);
-
+    cout << RH << endl;
     // Try to reconstruct from homography or fundamental depending on the ratio (0.40-0.45)
     if(RH>0.40)
-        return ReconstructH_WAF(vbMatchesInliersH, vbMatchesInliersH_middle, vbMatchesInliersH_high,H,mK,R21,t21,vP3D, vP3D_middle, vP3D_high,vbTriangulated, vbTriangulated_middle, vbTriangulated_high,1.0,50);
+        return ReconstructH_WAF2(vbMatchesInliersH, vbMatchesInliersH_middle, vbMatchesInliersH_high,H,mK,R21,t21,vP3D, vP3D_middle, vP3D_high,vbTriangulated, vbTriangulated_middle, vbTriangulated_high,1.0,50);
     else //if(pF_HF>0.6)
         return ReconstructF_WAF(vbMatchesInliersF, vbMatchesInliersF_middle, vbMatchesInliersF_high,F,mK,R21,t21,vP3D, vP3D_middle, vP3D_high,vbTriangulated, vbTriangulated_middle, vbTriangulated_high,1.0,50);
-
     return false;
 }
 
@@ -334,7 +443,7 @@ void Initializer::FindHomographyWAF(vector<bool> &vbMatchesInliers, vector<bool>
 
     Normalize(mvKeys1,vPn1, T1);
     Normalize(mvKeys2,vPn2, T2);
-    Normalize(mvKeys1_middle,vPn1_high, T1_middle);
+    Normalize(mvKeys1_middle,vPn1_middle, T1_middle);
     Normalize(mvKeys2_middle,vPn2_middle, T2_middle);
     Normalize(mvKeys1_high,vPn1_high, T1_high);
     Normalize(mvKeys2_high,vPn2_high, T2_high);
@@ -376,37 +485,23 @@ void Initializer::FindHomographyWAF(vector<bool> &vbMatchesInliers, vector<bool>
             int idx = mvSets[it][j];
             int idx_middle = mvSets_middle[it][j];
             int idx_high = mvSets_high[it][j];
-
             vPn1i[j] = vPn1[mvMatches12[idx].first];
             vPn2i[j] = vPn2[mvMatches12[idx].second];
+            mvMatches12_middle[idx_middle];
             vPn1i_middle[j] = vPn1_middle[mvMatches12_middle[idx_middle].first];
             vPn2i_middle[j] = vPn2_middle[mvMatches12_middle[idx_middle].second];
             vPn1i_high[j] = vPn1_high[mvMatches12_high[idx_high].first];
             vPn2i_high[j] = vPn2_high[mvMatches12_high[idx_high].second];
 
         }
-
         cv::Mat Hn = ComputeH21(vPn1i,vPn2i);
-        cv::Mat Hn_middle = ComputeH21(vPn1i_middle,vPn2i_middle);
-        cv::Mat Hn_high = ComputeH21(vPn1i_high,vPn2i_high);
-
         H21i = T2inv*Hn*T1;
         H12i = H21i.inv();
-        H21i_middle = T2inv_middle*Hn_middle*T1_middle;
-        H12i_middle = H21i_middle.inv();
-        H21i_high = T2inv_high*Hn_high*T1_high;
-        H12i_high = H21i_high.inv();
-
-
+        
         currentScore = CheckHomography(H21i, H12i, vbCurrentInliers, mSigma);
-        currentScore_middle = CheckHomographyMiddle(H21i_middle, H12i_middle, vbCurrentInliers_middle, mSigma);
-        currentScore_high = CheckHomographyHigh(H21i_high, H12i_high, vbCurrentInliers_high, mSigma);
-
         if(currentScore>score)
         {
             H21 = H21i.clone();
-            H21i_middle = H21i_middle.clone();
-            H21i_high = H21i_high.clone();
             vbMatchesInliers = vbCurrentInliers;
             vbMatchesInliers_middle = vbCurrentInliers_middle;
             vbMatchesInliers_high = vbCurrentInliers_high;
@@ -516,16 +611,10 @@ void Initializer::FindFundamentalWAF(vector<bool> &vbMatchesInliers,vector<bool>
             vPn2i_high[j] = vPn2i_high[mvMatches12_high[idx_high].second];
 
         }
-
         cv::Mat Fn = ComputeF21(vPn1i,vPn2i);
-        cv::Mat Fn_middle = ComputeF21(vPn1i_middle,vPn2i_middle);
-        cv::Mat Fn_high = ComputeF21(vPn1i_high,vPn2i_high);
-
         F21i = T2t*Fn*T1;
 
         currentScore = CheckFundamental(F21i, vbCurrentInliers, mSigma);
-        currentScore_middle = CheckFundamentalMiddle(F21i_middle, vbCurrentInliers_middle, mSigma);
-        currentScore_high = CheckFundamentalHigh(F21i_high, vbCurrentInliers_high, mSigma);
 
         if(currentScore>score)
         {
@@ -1525,7 +1614,8 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
 }
 
 
-bool Initializer::ReconstructH_WAF(vector<bool> &vbMatchesInliers, vector<bool> &vbMatchesInliers_middle, vector<bool> &vbMatchesInliers_high, cv::Mat &H21, cv::Mat &K,
+
+bool Initializer::ReconstructH_WAF2(vector<bool> &vbMatchesInliers, vector<bool> &vbMatchesInliers_middle, vector<bool> &vbMatchesInliers_high, cv::Mat &H21, cv::Mat &K,
                       cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<cv::Point3f> &vP3D_middle, vector<cv::Point3f> &vP3D_high, vector<bool> &vbTriangulated, vector<bool> &vbTriangulated_middle, vector<bool> &vbTriangulated_high, float minParallax, int minTriangulated)
 {
     int N=0, N_middle=0, N_high=0;
@@ -1675,40 +1765,13 @@ bool Initializer::ReconstructH_WAF(vector<bool> &vbMatchesInliers, vector<bool> 
             bestParallax = parallaxi;
             bestP3D = vP3Di;
             bestTriangulated = vbTriangulatedi;
+            bestTriangulated_middle = vbTriangulatedi_middle;
+            bestTriangulated_high = vbTriangulatedi_high;
         }
         else if(nGood>secondBestGood)
         {
             secondBestGood = nGood;
         }
-
-        if(nGood_middle>bestGood_middle)
-        {
-            secondBestGood_middle = bestGood_middle;
-            bestGood_middle = nGood_middle;
-            bestSolutionIdx_middle = i;
-            bestParallax_middle = parallaxi_middle;
-            bestP3D_middle = vP3Di_middle;
-            bestTriangulated_middle = vbTriangulatedi_middle;
-        }
-        else if(nGood_middle>secondBestGood_middle)
-        {
-            secondBestGood_middle = nGood_middle;
-        }
-
-        if(nGood_high>bestGood_high)
-        {
-            secondBestGood_hgih = bestGood_high;
-            bestGood_high = nGood_high;
-            bestSolutionIdx_high = i;
-            bestParallax_high = parallaxi_high;
-            bestP3D_high = vP3Di_high;
-            bestTriangulated_high = vbTriangulatedi_high;
-        }
-        else if(nGood_high>secondBestGood_hgih)
-        {
-            secondBestGood_hgih = nGood_high;
-        }
-
     }
 
 
@@ -1902,6 +1965,39 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
 
     return nGood;
 }
+
+void Initializer::setIniP3D(vector<cv::Point3f> &vP3D_middle,vector<cv::Point3f> &vP3D_high, cv::Mat &Rcw_set, cv::Mat &tcw_set)
+{
+    // Camera 1 Projection Matrix K[I|0]
+    cv::Mat P1(3,4,CV_32F,cv::Scalar(0));
+    mK.copyTo(P1.rowRange(0,3).colRange(0,3));
+    // Camera 2 Projection Matrix K[R|t]
+    cv::Mat P2(3,4,CV_32F);
+    Rcw_set.copyTo(P2.rowRange(0,3).colRange(0,3));
+    tcw_set.copyTo(P2.rowRange(0,3).col(3));
+    P2 = mK*P2;
+
+    vP3D_middle.resize(mvKeys1_middle.size());
+    vP3D_high.resize(mvKeys1_high.size());
+
+    for(size_t i=0, iend=mvMatches12_middle.size();i<iend;i++){
+        const cv::KeyPoint &kp1_middle = mvKeys1_middle[mvMatches12_middle[i].first];
+        const cv::KeyPoint &kp2_middle = mvKeys2_middle[mvMatches12_middle[i].second];
+        cv::Mat p3dC1_middle;
+
+        Triangulate(kp1_middle,kp2_middle,P1,P2,p3dC1_middle);
+
+        vP3D_middle[mvMatches12_middle[i].first] = cv::Point3f(p3dC1_middle.at<float>(0),p3dC1_middle.at<float>(1),p3dC1_middle.at<float>(2));
+    }
+    for(size_t i=0, iend=mvMatches12_high.size();i<iend;i++){
+        const cv::KeyPoint &kp1_high = mvKeys1_high[mvMatches12_high[i].first];
+        const cv::KeyPoint &kp2_high = mvKeys2_high[mvMatches12_high[i].second];
+        cv::Mat p3dC1_high;
+        Triangulate(kp1_high,kp2_high,P1,P2,p3dC1_high);
+        vP3D_high[mvMatches12_high[i].first] = cv::Point3f(p3dC1_high.at<float>(0),p3dC1_high.at<float>(1),p3dC1_high.at<float>(2));
+    }
+}
+
 
 void Initializer::DecomposeE(const cv::Mat &E, cv::Mat &R1, cv::Mat &R2, cv::Mat &t)
 {
