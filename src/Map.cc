@@ -130,4 +130,17 @@ void Map::clear()
     mvpKeyFrameOrigins.clear();
 }
 
+void Map::clearWAF()
+{
+    for(set<MapPoint*>::iterator sit=mspMapPoints.begin(), send=mspMapPoints.end(); sit!=send; sit++)
+        delete *sit;
+
+    mspMapPoints.clear();
+    mspKeyFrames.clear();
+    mnMaxKFid = 0;
+    mvpReferenceMapPoints.clear();
+    mvpKeyFrameOrigins.clear();
+}
+
+
 } //namespace ORB_SLAM

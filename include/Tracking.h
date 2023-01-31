@@ -119,12 +119,14 @@ public:
     bool mbOnlyTracking;
 
     void Reset();
+    void ResetWAF();
 
 protected:
 
     // Main tracking function. It is independent of the input sensor.
     void Track();
     void TrackWAF();
+    void TrackMonoWAF();
 
     // Map initialization for stereo and RGB-D
     void StereoInitialization();
@@ -137,18 +139,31 @@ protected:
     void CreateInitialMapMonocularWAF();
 
     void CheckReplacedInLastFrame();
+    void CheckReplacedInLastFrameMiddle();
+    void CheckReplacedInLastFrameHigh();
+
     bool TrackReferenceKeyFrame();
+    bool TrackReferenceKeyFrameWAF();
+
     void UpdateLastFrame();
     bool TrackWithMotionModel();
+    bool TrackWithMotionModelWAF();
 
     bool Relocalization();
 
     void UpdateLocalMap();
+    void UpdateLocalMapWAF();
     void UpdateLocalPoints();
+    void UpdateLocalPointsWAF();
     void UpdateLocalKeyFrames();
+    void UpdateLocalKeyFramesWAF();
+
 
     bool TrackLocalMap();
+    bool TrackLocalMapWAF();
     void SearchLocalPoints();
+    void SearchLocalPointsWAF();
+
 
     bool NeedNewKeyFrame();
     void CreateNewKeyFrame();
@@ -210,7 +225,7 @@ protected:
     float mDepthMapFactor;
 
     //Current matches in frame
-    int mnMatchesInliers;
+    int mnMatchesInliers, mnMatchesInliers_middle, mnMatchesInliers_high;
 
     //Last Frame, KeyFrame and Relocalisation Info
     KeyFrame* mpLastKeyFrame;

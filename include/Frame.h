@@ -63,6 +63,8 @@ public:
 
     // Compute Bag of Words representation.
     void ComputeBoW();
+    void ComputeBoW_high();
+    void ComputeBoW_middle();
 
     // Set the camera pose.
     void SetPose(cv::Mat Tcw);
@@ -88,6 +90,8 @@ public:
     bool PosInGrid(const cv::KeyPoint &kp, int &posX, int &posY);
 
     vector<size_t> GetFeaturesInArea(const float &x, const float  &y, const float  &r, const int minLevel=-1, const int maxLevel=-1) const;
+    vector<size_t> GetFeaturesInAreaMiddle(const float &x, const float  &y, const float  &r, const int minLevel=-1, const int maxLevel=-1) const;
+    vector<size_t> GetFeaturesInAreaHigh(const float &x, const float  &y, const float  &r, const int minLevel=-1, const int maxLevel=-1) const;
 
     // Search a match for each keypoint in the left image to a keypoint in the right image.
     // If there is a match, depth is computed and the right coordinate associated to the left keypoint is stored.
@@ -143,12 +147,12 @@ public:
 
     // Corresponding stereo coordinate and depth for each keypoint.
     // "Monocular" keypoints have a negative value.
-    std::vector<float> mvuRight;
+    std::vector<float> mvuRight, mvuRight_middle, mvuRight_high;
     std::vector<float> mvDepth, mvDepth_middle, mvDepth_high;
 
     // Bag of Words Vector structures.
-    DBoW2::BowVector mBowVec;
-    DBoW2::FeatureVector mFeatVec;
+    DBoW2::BowVector mBowVec, mBowVec_middle, mBowVec_high;
+    DBoW2::FeatureVector mFeatVec, mFeatVec_middle, mFeatVec_high;
 
     // ORB descriptor, each row associated to a keypoint.
     cv::Mat mDescriptors, mDescriptorsRight, mDescriptors_middle, mDescriptorsRight_middle, mDescriptors_high, mDescriptorsRight_high;

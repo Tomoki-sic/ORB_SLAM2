@@ -45,7 +45,9 @@ Frame::Frame(const Frame &frame)
      mvKeys(frame.mvKeys), mvKeys_middle(frame.mvKeys_middle), mvKeys_high(frame.mvKeys_high),
      mvKeysRight(frame.mvKeysRight), mvKeysRight_middle(frame.mvKeysRight_high), 
      mvKeysUn(frame.mvKeysUn), mvKeysUn_middle(frame.mvKeysUn_middle), mvKeysUn_high(frame.mvKeysUn_high),
-     mvuRight(frame.mvuRight), mvDepth(frame.mvDepth), mvDepth_middle(frame.mvDepth_middle),mvDepth_high(frame.mvDepth_high), mBowVec(frame.mBowVec), mFeatVec(frame.mFeatVec),
+     mvuRight(frame.mvuRight), mvuRight_middle(frame.mvuRight_middle), mvuRight_high(frame.mvuRight_high), mvDepth(frame.mvDepth), mvDepth_middle(frame.mvDepth_middle),mvDepth_high(frame.mvDepth_high), 
+     mBowVec(frame.mBowVec),mBowVec_middle(frame.mBowVec_middle),mBowVec_high(frame.mBowVec_high), 
+     mFeatVec(frame.mFeatVec),mFeatVec_middle(frame.mFeatVec_middle),mFeatVec_high(frame.mFeatVec_high),
      mDescriptors(frame.mDescriptors.clone()), mDescriptorsRight(frame.mDescriptorsRight.clone()),
      mDescriptors_middle(frame.mDescriptors_middle.clone()), mDescriptorsRight_middle(frame.mDescriptorsRight_middle.clone()),
      mDescriptors_high(frame.mDescriptors_high.clone()), mDescriptorsRight_high(frame.mDescriptorsRight_high.clone()),
@@ -252,19 +254,36 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
     mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
     // ORB extraction
+
     ExtractORBWAF(0,imGray, imGray_middle, imGray_high);
 
     N = mvKeys.size();
     N_middle = mvKeys_middle.size();
     N_high = mvKeys_high.size();
+    //std::cout << N << ", " << N_middle << ", " << N_high << std::endl;
 
     if(mvKeys.empty())
         return;
+
+    for(int i=0; i<N_middle; i++)
+    {
+        mvKeys_middle[i].pt.x = mvKeys_middle[i].pt.x/3;
+        mvKeys_middle[i].pt.y = mvKeys_middle[i].pt.y/3;
+    }
+    for(int i=0; i<N_high; i++)
+    {
+        mvKeys_high[i].pt.x = (mvKeys_high[i].pt.x+400)/4;
+        mvKeys_high[i].pt.y = (mvKeys_high[i].pt.y+100)/4;
+    }
+
+    
 
     UndistortKeyPointsWAF();
 
     // Set no stereo information
     mvuRight = vector<float>(N,-1);
+    mvuRight_middle = vector<float>(N_middle,-1);
+    mvuRight_high = vector<float>(N_high,-1);
     mvDepth = vector<float>(N,-1);
     mvDepth_middle = vector<float>(N_middle,-1);
     mvDepth_high = vector<float>(N_high,-1);
@@ -275,7 +294,6 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     mvbOutlier = vector<bool>(N,false);
     mvbOutlier_middle = vector<bool>(N_middle,false);
     mvbOutlier_high = vector<bool>(N_high,false);
-
     // This is done only for the first Frame (or after a change in the calibration)
     if(mbInitialComputations)
     {
@@ -295,6 +313,7 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     }
 
     mb = mbf/fx;
+
 
     AssignFeaturesToGrid();
 }
@@ -467,6 +486,117 @@ vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const f
     return vIndices;
 }
 
+vector<size_t> Frame::GetFeaturesInAreaMiddle(const float &x, const float  &y, const float  &r, const int minLevel, const int maxLevel) const
+{
+    vector<size_t> vIndices;
+    vIndices.reserve(N_middle);
+
+    const int nMinCellX = max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
+    if(nMinCellX>=FRAME_GRID_COLS)
+        return vIndices;
+
+    const int nMaxCellX = min((int)FRAME_GRID_COLS-1,(int)ceil((x-mnMinX+r)*mfGridElementWidthInv));
+    if(nMaxCellX<0)
+        return vIndices;
+
+    const int nMinCellY = max(0,(int)floor((y-mnMinY-r)*mfGridElementHeightInv));
+    if(nMinCellY>=FRAME_GRID_ROWS)
+        return vIndices;
+
+    const int nMaxCellY = min((int)FRAME_GRID_ROWS-1,(int)ceil((y-mnMinY+r)*mfGridElementHeightInv));
+    if(nMaxCellY<0)
+        return vIndices;
+
+    const bool bCheckLevels = (minLevel>0) || (maxLevel>=0);
+
+    for(int ix = nMinCellX; ix<=nMaxCellX; ix++)
+    {
+        for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
+        {
+            const vector<size_t> vCell = mGrid[ix][iy];
+            if(vCell.empty())
+                continue;
+
+            for(size_t j=0, jend=vCell.size(); j<jend; j++)
+            {
+                const cv::KeyPoint &kpUn = mvKeysUn_middle[vCell[j]];
+                if(bCheckLevels)
+                {
+                    if(kpUn.octave<minLevel)
+                        continue;
+                    if(maxLevel>=0)
+                        if(kpUn.octave>maxLevel)
+                            continue;
+                }
+
+                const float distx = kpUn.pt.x-x;
+                const float disty = kpUn.pt.y-y;
+
+                if(fabs(distx)<r && fabs(disty)<r)
+                    vIndices.push_back(vCell[j]);
+            }
+        }
+    }
+
+    return vIndices;
+}
+
+vector<size_t> Frame::GetFeaturesInAreaHigh(const float &x, const float  &y, const float  &r, const int minLevel, const int maxLevel) const
+{
+    vector<size_t> vIndices;
+    vIndices.reserve(N_high);
+
+    const int nMinCellX = max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
+    if(nMinCellX>=FRAME_GRID_COLS)
+        return vIndices;
+
+    const int nMaxCellX = min((int)FRAME_GRID_COLS-1,(int)ceil((x-mnMinX+r)*mfGridElementWidthInv));
+    if(nMaxCellX<0)
+        return vIndices;
+
+    const int nMinCellY = max(0,(int)floor((y-mnMinY-r)*mfGridElementHeightInv));
+    if(nMinCellY>=FRAME_GRID_ROWS)
+        return vIndices;
+
+    const int nMaxCellY = min((int)FRAME_GRID_ROWS-1,(int)ceil((y-mnMinY+r)*mfGridElementHeightInv));
+    if(nMaxCellY<0)
+        return vIndices;
+
+    const bool bCheckLevels = (minLevel>0) || (maxLevel>=0);
+
+    for(int ix = nMinCellX; ix<=nMaxCellX; ix++)
+    {
+        for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
+        {
+            const vector<size_t> vCell = mGrid[ix][iy];
+            if(vCell.empty())
+                continue;
+
+            for(size_t j=0, jend=vCell.size(); j<jend; j++)
+            {
+                const cv::KeyPoint &kpUn = mvKeysUn_high[vCell[j]];
+                if(bCheckLevels)
+                {
+                    if(kpUn.octave<minLevel)
+                        continue;
+                    if(maxLevel>=0)
+                        if(kpUn.octave>maxLevel)
+                            continue;
+                }
+
+                const float distx = kpUn.pt.x-x;
+                const float disty = kpUn.pt.y-y;
+
+                if(fabs(distx)<r && fabs(disty)<r)
+                    vIndices.push_back(vCell[j]);
+            }
+        }
+    }
+
+    return vIndices;
+}
+
+
 bool Frame::PosInGrid(const cv::KeyPoint &kp, int &posX, int &posY)
 {
     posX = round((kp.pt.x-mnMinX)*mfGridElementWidthInv);
@@ -488,6 +618,25 @@ void Frame::ComputeBoW()
         mpORBvocabulary->transform(vCurrentDesc,mBowVec,mFeatVec,4);
     }
 }
+
+void Frame::ComputeBoW_middle()
+{
+    if(mBowVec_middle.empty())
+    {
+        vector<cv::Mat> vCurrentDesc = Converter::toDescriptorVector(mDescriptors_middle);
+        mpORBvocabulary->transform(vCurrentDesc,mBowVec_middle,mFeatVec_middle,4);
+    }
+}
+
+void Frame::ComputeBoW_high()
+{
+    if(mBowVec_high.empty())
+    {
+        vector<cv::Mat> vCurrentDesc = Converter::toDescriptorVector(mDescriptors_high);
+        mpORBvocabulary->transform(vCurrentDesc,mBowVec_high,mFeatVec_high,4);
+    }
+}
+
 
 void Frame::UndistortKeyPoints()
 {

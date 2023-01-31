@@ -138,7 +138,6 @@ void Viewer::Run()
             mpSystem->DeactivateLocalizationMode();
             bLocalizationMode = false;
         }
-
         d_cam.Activate(s_cam);
         glClearColor(1.0f,1.0f,1.0f,1.0f);
         mpMapDrawer->DrawCurrentCamera(Twc);
@@ -165,13 +164,20 @@ void Viewer::Run()
         mpMapDrawer->DrawCurrentCamera(Twc);
         if(menuShowKeyFrames || menuShowGraph)
             mpMapDrawer->DrawKeyFrames(menuShowKeyFrames,menuShowGraph);
-
+        if(menuShowPoints)
+        {
+            mpMapDrawer->DrawMapPointsMiddle();
+            mpMapDrawer->DrawMapPointsHigh();
+        }
         pangolin::FinishFrame();
 
         cv::Mat im = mpFrameDrawer->DrawFrame();
+        cv::Mat im_middle = mpFrameDrawer->DrawFrameMiddle();
+        cv::Mat im_high = mpFrameDrawer->DrawFrameHigh();
         cv::imshow("ORB-SLAM2: Current Frame",im);
+        cv::imshow("ORB-SLAM2: Current Frame middle",im_middle);
+        cv::imshow("ORB-SLAM2: Current Frame high",im_high);
         cv::waitKey(mT);
-
         if(menuReset)
         {
             menuShowGraph = true;
@@ -186,7 +192,6 @@ void Viewer::Run()
             mpSystem->Reset();
             menuReset = false;
         }
-
         if(Stop())
         {
             while(isStopped())
@@ -194,7 +199,6 @@ void Viewer::Run()
                 usleep(3000);
             }
         }
-
         if(CheckFinish())
             break;
     }

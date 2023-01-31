@@ -50,6 +50,8 @@ public:
 
     // Draw last processed frame.
     cv::Mat DrawFrame();
+    cv::Mat DrawFrameMiddle();
+    cv::Mat DrawFrameHigh();
 
 protected:
     void DrawTextInfo(cv::Mat &im, int nState, cv::Mat &imText);

@@ -60,6 +60,8 @@ public:
 
     // Main function
     void Run();
+    void RunWAF();
+
 
     void InsertKeyFrame(KeyFrame *pKF);
 
@@ -90,10 +92,13 @@ protected:
     bool DetectLoop();
 
     bool ComputeSim3();
+    bool ComputeSim3WAF();
+
 
     void SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap);
 
     void CorrectLoop();
+    void CorrectLoopWAF();
 
     void ResetIfRequested();
     bool mbResetRequested;

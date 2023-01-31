@@ -51,12 +51,12 @@ private:
 
 ImageGrabber::ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM)
 {
-    Syn_x_low = ReadMatFromTxt("Syn_x_t.txt", 168,425);
-    Syn_y_low = ReadMatFromTxt("Syn_y_t.txt", 168,425);
-    Syn_x_middle = ReadMatFromTxt("Syn_x_t.txt", 168,425);
-    Syn_y_middle = ReadMatFromTxt("Syn_y_t.txt", 168,425);
-    Syn_x_high = ReadMatFromTxt("Syn_x_t.txt", 168,425);
-    Syn_y_high = ReadMatFromTxt("Syn_y_t.txt", 168,425);
+    Syn_x_low = ReadMatFromTxt("Syn_x_small.txt", 168,425);
+    Syn_y_low = ReadMatFromTxt("Syn_y_small.txt", 168,425);
+    Syn_x_middle = ReadMatFromTxt("Syn_x_middle.txt", 502,1275);
+    Syn_y_middle = ReadMatFromTxt("Syn_y_middle.txt", 502,1275);
+    Syn_x_high = ReadMatFromTxt("Syn_x_high.txt", 470,900);
+    Syn_y_high = ReadMatFromTxt("Syn_y_high.txt", 470,900);
 
 }
 

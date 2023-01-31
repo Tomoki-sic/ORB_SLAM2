@@ -49,6 +49,7 @@ public:
 
     // Main function
     void Run();
+    void RunWAF();
 
     void InsertKeyFrame(KeyFrame* pKF);
 
@@ -77,13 +78,19 @@ protected:
 
     bool CheckNewKeyFrames();
     void ProcessNewKeyFrame();
+    void ProcessNewKeyFrameWAF();
     void CreateNewMapPoints();
     void CreateNewMapPointsWAF();
+    void CreateNewMapPointsWAF2();
 
     void MapPointCulling();
+    void MapPointCullingWAF();
+
+
     void SearchInNeighbors();
 
     void KeyFrameCulling();
+    void KeyFrameCullingWAF();
 
     cv::Mat ComputeF12(KeyFrame* &pKF1, KeyFrame* &pKF2);
 
@@ -92,6 +99,8 @@ protected:
     bool mbMonocular;
 
     void ResetIfRequested();
+    void ResetIfRequestedWAF();
+
     bool mbResetRequested;
     std::mutex mMutexReset;
 
@@ -110,7 +119,7 @@ protected:
 
     KeyFrame* mpCurrentKeyFrame;
 
-    std::list<MapPoint*> mlpRecentAddedMapPoints;
+    std::list<MapPoint*> mlpRecentAddedMapPoints, mlpRecentAddedMapPoints_middle, mlpRecentAddedMapPoints_high;
 
     std::mutex mMutexNewKFs;
 

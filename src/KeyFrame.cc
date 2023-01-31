@@ -37,9 +37,9 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     mbf(F.mbf), mb(F.mb), mThDepth(F.mThDepth), N(F.N), N_middle(F.N_middle), N_high(F.N_high), 
     mvKeys(F.mvKeys), mvKeys_middle(F.mvKeys_middle), mvKeys_high(F.mvKeys_high), 
     mvKeysUn(F.mvKeysUn), mvKeysUn_middle(F.mvKeysUn_middle), mvKeysUn_high(F.mvKeysUn_high),
-    mvuRight(F.mvuRight), mvDepth(F.mvDepth), 
+    mvuRight(F.mvuRight), mvuRight_middle(F.mvuRight_middle), mvuRight_high(F.mvuRight_high),mvDepth(F.mvDepth),mvDepth_middle(F.mvDepth_middle),mvDepth_high(F.mvDepth_high), 
     mDescriptors(F.mDescriptors.clone()), mDescriptors_middle(F.mDescriptors_middle.clone()), mDescriptors_high(F.mDescriptors_high.clone()),
-    mBowVec(F.mBowVec), mFeatVec(F.mFeatVec), mnScaleLevels(F.mnScaleLevels), mfScaleFactor(F.mfScaleFactor),
+    mBowVec(F.mBowVec), mFeatVec(F.mFeatVec), mFeatVec_middle(F.mFeatVec_middle), mFeatVec_high(F.mFeatVec_high), mnScaleLevels(F.mnScaleLevels), mfScaleFactor(F.mfScaleFactor),
     mfLogScaleFactor(F.mfLogScaleFactor), mvScaleFactors(F.mvScaleFactors), mvLevelSigma2(F.mvLevelSigma2),
     mvInvLevelSigma2(F.mvInvLevelSigma2), mnMinX(F.mnMinX), mnMinY(F.mnMinY), mnMaxX(F.mnMaxX),
     mnMaxY(F.mnMaxY), mK(F.mK), mvpMapPoints(F.mvpMapPoints), mvpMapPoints_middle(F.mvpMapPoints_middle), mvpMapPoints_high(F.mvpMapPoints_high), mpKeyFrameDB(pKFDB),
@@ -62,15 +62,15 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
 KeyFrame::KeyFrame(Frame &F, Map *pMap, Map *pMap_middle, Map *pMap_high, KeyFrameDatabase *pKFDB):
     mnFrameId(F.mnId),  mTimeStamp(F.mTimeStamp), mnGridCols(FRAME_GRID_COLS), mnGridRows(FRAME_GRID_ROWS),
     mfGridElementWidthInv(F.mfGridElementWidthInv), mfGridElementHeightInv(F.mfGridElementHeightInv),
-    mnTrackReferenceForFrame(0), mnFuseTargetForKF(0), mnBALocalForKF(0), mnBAFixedForKF(0),
+    mnTrackReferenceForFrame(0), mnFuseTargetForKF(0), mnBALocalForKF(0), mnBALocalForKF_middle(0), mnBALocalForKF_high(0), mnBAFixedForKF(0), mnBAFixedForKF_middle(0), mnBAFixedForKF_high(0),
     mnLoopQuery(0), mnLoopWords(0), mnRelocQuery(0), mnRelocWords(0), mnBAGlobalForKF(0),
     fx(F.fx), fy(F.fy), cx(F.cx), cy(F.cy), invfx(F.invfx), invfy(F.invfy),
     mbf(F.mbf), mb(F.mb), mThDepth(F.mThDepth), N(F.N), N_middle(F.N_middle), N_high(F.N_high), 
     mvKeys(F.mvKeys), mvKeys_middle(F.mvKeys_middle), mvKeys_high(F.mvKeys_high), 
     mvKeysUn(F.mvKeysUn), mvKeysUn_middle(F.mvKeysUn_middle), mvKeysUn_high(F.mvKeysUn_high),
-    mvuRight(F.mvuRight), mvDepth(F.mvDepth), 
+    mvuRight(F.mvuRight),mvuRight_middle(F.mvuRight_middle),mvuRight_high(F.mvuRight_high), mvDepth(F.mvDepth),mvDepth_middle(F.mvDepth_middle),mvDepth_high(F.mvDepth_high), 
     mDescriptors(F.mDescriptors.clone()), mDescriptors_middle(F.mDescriptors_middle.clone()), mDescriptors_high(F.mDescriptors_high.clone()),
-    mBowVec(F.mBowVec), mFeatVec(F.mFeatVec), mnScaleLevels(F.mnScaleLevels), mfScaleFactor(F.mfScaleFactor),
+    mBowVec(F.mBowVec), mBowVec_middle(F.mBowVec_middle), mBowVec_high(F.mBowVec_high), mFeatVec(F.mFeatVec), mFeatVec_middle(F.mFeatVec_middle), mFeatVec_high(F.mFeatVec_high), mnScaleLevels(F.mnScaleLevels), mfScaleFactor(F.mfScaleFactor),
     mfLogScaleFactor(F.mfLogScaleFactor), mvScaleFactors(F.mvScaleFactors), mvLevelSigma2(F.mvLevelSigma2),
     mvInvLevelSigma2(F.mvInvLevelSigma2), mnMinX(F.mnMinX), mnMinY(F.mnMinY), mnMaxX(F.mnMaxX),
     mnMaxY(F.mnMaxY), mK(F.mK), mvpMapPoints(F.mvpMapPoints), mvpMapPoints_middle(F.mvpMapPoints_middle), mvpMapPoints_high(F.mvpMapPoints_high), mpKeyFrameDB(pKFDB),
@@ -97,6 +97,28 @@ void KeyFrame::ComputeBoW()
         // Feature vector associate features with nodes in the 4th level (from leaves up)
         // We assume the vocabulary tree has 6 levels, change the 4 otherwise
         mpORBvocabulary->transform(vCurrentDesc,mBowVec,mFeatVec,4);
+    }
+}
+
+void KeyFrame::ComputeBoW_middle()
+{
+    if(mBowVec_middle.empty() || mFeatVec_middle.empty())
+    {
+        vector<cv::Mat> vCurrentDesc = Converter::toDescriptorVector(mDescriptors_middle);
+        // Feature vector associate features with nodes in the 4th level (from leaves up)
+        // We assume the vocabulary tree has 6 levels, change the 4 otherwise
+        mpORBvocabulary->transform(vCurrentDesc,mBowVec_middle,mFeatVec_middle,4);
+    }
+}
+
+void KeyFrame::ComputeBoW_high()
+{
+    if(mBowVec_high.empty() || mFeatVec_high.empty())
+    {
+        vector<cv::Mat> vCurrentDesc = Converter::toDescriptorVector(mDescriptors_high);
+        // Feature vector associate features with nodes in the 4th level (from leaves up)
+        // We assume the vocabulary tree has 6 levels, change the 4 otherwise
+        mpORBvocabulary->transform(vCurrentDesc,mBowVec_high,mFeatVec_high,4);
     }
 }
 
@@ -252,11 +274,30 @@ void KeyFrame::AddMapPointMiddle(MapPoint *pMP, const size_t &idx)
     mvpMapPoints_middle[idx]=pMP;
 }
 
+void KeyFrame::AddMapPointHigh(MapPoint *pMP, const size_t &idx)
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    mvpMapPoints_high[idx]=pMP;
+}
+
 
 void KeyFrame::EraseMapPointMatch(const size_t &idx)
 {
     unique_lock<mutex> lock(mMutexFeatures);
     mvpMapPoints[idx]=static_cast<MapPoint*>(NULL);
+}
+
+void KeyFrame::EraseMapPointMatchMiddle(const size_t &idx)
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    std::cout << "erase2" << std::endl;
+    mvpMapPoints_middle[idx]=static_cast<MapPoint*>(NULL);
+}
+
+void KeyFrame::EraseMapPointMatchHigh(const size_t &idx)
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    mvpMapPoints_high[idx]=static_cast<MapPoint*>(NULL);
 }
 
 void KeyFrame::EraseMapPointMatch(MapPoint* pMP)
@@ -266,6 +307,19 @@ void KeyFrame::EraseMapPointMatch(MapPoint* pMP)
         mvpMapPoints[idx]=static_cast<MapPoint*>(NULL);
 }
 
+void KeyFrame::EraseMapPointMatchMiddle(MapPoint* pMP)
+{
+    int idx = pMP->GetIndexInKeyFrame(this);
+    if(idx>=0)
+        mvpMapPoints_middle[idx]=static_cast<MapPoint*>(NULL);
+}
+
+void KeyFrame::EraseMapPointMatchHigh(MapPoint* pMP)
+{
+    int idx = pMP->GetIndexInKeyFrame(this);
+    if(idx>=0)
+        mvpMapPoints_middle[idx]=static_cast<MapPoint*>(NULL);
+}
 
 void KeyFrame::ReplaceMapPointMatch(const size_t &idx, MapPoint* pMP)
 {
@@ -320,10 +374,34 @@ vector<MapPoint*> KeyFrame::GetMapPointMatches()
     return mvpMapPoints;
 }
 
+vector<MapPoint*> KeyFrame::GetMapPointMatchesMiddle()
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    return mvpMapPoints_middle;
+}
+
+vector<MapPoint*> KeyFrame::GetMapPointMatchesHigh()
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    return mvpMapPoints_high;
+}
+
 MapPoint* KeyFrame::GetMapPoint(const size_t &idx)
 {
     unique_lock<mutex> lock(mMutexFeatures);
     return mvpMapPoints[idx];
+}
+
+MapPoint* KeyFrame::GetMapPointMiddle(const size_t &idx)
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    return mvpMapPoints_middle[idx];
+}
+
+MapPoint* KeyFrame::GetMapPointHigh(const size_t &idx)
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    return mvpMapPoints_high[idx];
 }
 
 void KeyFrame::UpdateConnections()
@@ -509,6 +587,13 @@ void KeyFrame::SetBadFlag()
     for(size_t i=0; i<mvpMapPoints.size(); i++)
         if(mvpMapPoints[i])
             mvpMapPoints[i]->EraseObservation(this);
+    for(size_t i=0; i<mvpMapPoints_middle.size(); i++)
+        if(mvpMapPoints_middle[i])
+            mvpMapPoints_middle[i]->EraseObservationMiddle(this);
+    for(size_t i=0; i<mvpMapPoints_high.size(); i++)
+        if(mvpMapPoints_high[i])
+            mvpMapPoints_high[i]->EraseObservationHigh(this);
+
     {
         unique_lock<mutex> lock(mMutexConnections);
         unique_lock<mutex> lock1(mMutexFeatures);
@@ -583,6 +668,101 @@ void KeyFrame::SetBadFlag()
     mpMap->EraseKeyFrame(this);
     mpKeyFrameDB->erase(this);
 }
+
+void KeyFrame::SetBadFlagWAF()
+{   
+    {
+        unique_lock<mutex> lock(mMutexConnections);
+        if(mnId==0)
+            return;
+        else if(mbNotErase)
+        {
+            mbToBeErased = true;
+            return;
+        }
+    }
+
+    for(map<KeyFrame*,int>::iterator mit = mConnectedKeyFrameWeights.begin(), mend=mConnectedKeyFrameWeights.end(); mit!=mend; mit++)
+        mit->first->EraseConnection(this);
+
+    for(size_t i=0; i<mvpMapPoints.size(); i++)
+        if(mvpMapPoints[i])
+            mvpMapPoints[i]->EraseObservation(this);
+    {
+        unique_lock<mutex> lock(mMutexConnections);
+        unique_lock<mutex> lock1(mMutexFeatures);
+
+        mConnectedKeyFrameWeights.clear();
+        mvpOrderedConnectedKeyFrames.clear();
+
+        // Update Spanning Tree
+        set<KeyFrame*> sParentCandidates;
+        sParentCandidates.insert(mpParent);
+
+        // Assign at each iteration one children with a parent (the pair with highest covisibility weight)
+        // Include that children as new parent candidate for the rest
+        while(!mspChildrens.empty())
+        {
+            bool bContinue = false;
+
+            int max = -1;
+            KeyFrame* pC;
+            KeyFrame* pP;
+
+            for(set<KeyFrame*>::iterator sit=mspChildrens.begin(), send=mspChildrens.end(); sit!=send; sit++)
+            {
+                KeyFrame* pKF = *sit;
+                if(pKF->isBad())
+                    continue;
+
+                // Check if a parent candidate is connected to the keyframe
+                vector<KeyFrame*> vpConnected = pKF->GetVectorCovisibleKeyFrames();
+                for(size_t i=0, iend=vpConnected.size(); i<iend; i++)
+                {
+                    for(set<KeyFrame*>::iterator spcit=sParentCandidates.begin(), spcend=sParentCandidates.end(); spcit!=spcend; spcit++)
+                    {
+                        if(vpConnected[i]->mnId == (*spcit)->mnId)
+                        {
+                            int w = pKF->GetWeight(vpConnected[i]);
+                            if(w>max)
+                            {
+                                pC = pKF;
+                                pP = vpConnected[i];
+                                max = w;
+                                bContinue = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(bContinue)
+            {
+                pC->ChangeParent(pP);
+                sParentCandidates.insert(pC);
+                mspChildrens.erase(pC);
+            }
+            else
+                break;
+        }
+
+        // If a children has no covisibility links with any parent candidate, assign to the original parent of this KF
+        if(!mspChildrens.empty())
+            for(set<KeyFrame*>::iterator sit=mspChildrens.begin(); sit!=mspChildrens.end(); sit++)
+            {
+                (*sit)->ChangeParent(mpParent);
+            }
+
+        mpParent->EraseChild(this);
+        mTcp = Tcw*mpParent->GetPoseInverse();
+        mbBad = true;
+    }
+
+
+    mpMap->EraseKeyFrame(this);
+    mpKeyFrameDB->erase(this);
+}
+
 
 bool KeyFrame::isBad()
 {

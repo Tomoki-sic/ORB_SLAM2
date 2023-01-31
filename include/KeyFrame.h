@@ -56,6 +56,8 @@ public:
 
     // Bag of Words Representation
     void ComputeBoW();
+    void ComputeBoW_middle();
+    void ComputeBoW_high();
 
     // Covisibility graph functions
     void AddConnection(KeyFrame* pKF, const int &weight);
@@ -85,12 +87,20 @@ public:
     void AddMapPointMiddle(MapPoint* pMP, const size_t &idx);
     void AddMapPointHigh(MapPoint* pMP, const size_t &idx);
     void EraseMapPointMatch(const size_t &idx);
+    void EraseMapPointMatchMiddle(const size_t &idx);
+    void EraseMapPointMatchHigh(const size_t &idx);
     void EraseMapPointMatch(MapPoint* pMP);
+    void EraseMapPointMatchMiddle(MapPoint* pMP);
+    void EraseMapPointMatchHigh(MapPoint* pMP);
     void ReplaceMapPointMatch(const size_t &idx, MapPoint* pMP);
     std::set<MapPoint*> GetMapPoints();
     std::vector<MapPoint*> GetMapPointMatches();
+    std::vector<MapPoint*> GetMapPointMatchesMiddle();
+    std::vector<MapPoint*> GetMapPointMatchesHigh();
     int TrackedMapPoints(const int &minObs);
     MapPoint* GetMapPoint(const size_t &idx);
+    MapPoint* GetMapPointMiddle(const size_t &idx);
+    MapPoint* GetMapPointHigh(const size_t &idx);
 
     // KeyPoint functions
     std::vector<size_t> GetFeaturesInArea(const float &x, const float  &y, const float  &r) const;
@@ -105,6 +115,7 @@ public:
 
     // Set/check bad flag
     void SetBadFlag();
+    void SetBadFlagWAF();
     bool isBad();
 
     // Compute Scene Depth (q=2 median). Used in monocular.
@@ -139,8 +150,8 @@ public:
     long unsigned int mnFuseTargetForKF;
 
     // Variables used by the local mapping
-    long unsigned int mnBALocalForKF;
-    long unsigned int mnBAFixedForKF;
+    long unsigned int mnBALocalForKF, mnBALocalForKF_middle, mnBALocalForKF_high;
+    long unsigned int mnBAFixedForKF, mnBAFixedForKF_middle, mnBAFixedForKF_high;
 
     // Variables used by the keyframe database
     long unsigned int mnLoopQuery;
@@ -166,13 +177,13 @@ public:
     // KeyPoints, stereo coordinate and descriptors (all associated by an index)
     const std::vector<cv::KeyPoint> mvKeys, mvKeys_middle, mvKeys_high;
     const std::vector<cv::KeyPoint> mvKeysUn, mvKeysUn_middle, mvKeysUn_high;
-    const std::vector<float> mvuRight; // negative value for monocular points
-    const std::vector<float> mvDepth; // negative value for monocular points
+    const std::vector<float> mvuRight, mvuRight_middle, mvuRight_high; // negative value for monocular points
+    const std::vector<float> mvDepth, mvDepth_middle, mvDepth_high; // negative value for monocular points
     const cv::Mat mDescriptors, mDescriptors_middle, mDescriptors_high;
 
     //BoW
-    DBoW2::BowVector mBowVec;
-    DBoW2::FeatureVector mFeatVec;
+    DBoW2::BowVector mBowVec, mBowVec_middle, mBowVec_high;
+    DBoW2::FeatureVector mFeatVec, mFeatVec_middle, mFeatVec_high;
 
     // Pose relative to parent (this is computed when bad flag is activated)
     cv::Mat mTcp;

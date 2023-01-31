@@ -54,12 +54,18 @@ public:
     int Observations();
 
     void AddObservation(KeyFrame* pKF,size_t idx);
+    void AddObservationMiddle(KeyFrame* pKF, size_t idx);
+    void AddObservationHigh(KeyFrame* pKF, size_t idx);
     void EraseObservation(KeyFrame* pKF);
+    void EraseObservationMiddle(KeyFrame* pKF);
+    void EraseObservationHigh(KeyFrame* pKF);
 
     int GetIndexInKeyFrame(KeyFrame* pKF);
     bool IsInKeyFrame(KeyFrame* pKF);
 
     void SetBadFlag();
+    void SetBadFlagMiddle();
+    void SetBadFlagHigh();
     bool isBad();
 
     void Replace(MapPoint* pMP);    
@@ -73,10 +79,13 @@ public:
     }
 
     void ComputeDistinctiveDescriptors();
-
+    void ComputeDistinctiveDescriptorsMiddle();
+    void ComputeDistinctiveDescriptorsHigh();
     cv::Mat GetDescriptor();
 
     void UpdateNormalAndDepth();
+    void UpdateNormalAndDepthMiddle();
+    void UpdateNormalAndDepthHigh();
 
     float GetMinDistanceInvariance();
     float GetMaxDistanceInvariance();
@@ -120,7 +129,7 @@ protected:
      cv::Mat mWorldPos;
 
      // Keyframes observing the point and associated index in keyframe
-     std::map<KeyFrame*,size_t> mObservations;
+     std::map<KeyFrame*,size_t> mObservations, mObservations_middle, mObservations_high;
 
      // Mean viewing direction
      cv::Mat mNormalVector;

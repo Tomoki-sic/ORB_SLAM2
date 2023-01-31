@@ -145,6 +145,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
 
     mpVocabulary = new ORBVocabulary();
+    
     bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
     if(!bVocLoad)
     {
@@ -172,7 +173,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(mpMap, mpMap_middle, mpMap_high, mSensor==MONOCULAR);
-    mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
+    mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::RunWAF,mpLocalMapper);
 
     //Initialize the Loop Closing thread and launch
     mpLoopCloser = new LoopClosing(mpMap, mpMap_middle, mpMap_high, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR);
@@ -388,7 +389,7 @@ cv::Mat System::TrackMonocularWAF(const cv::Mat &im, const cv::Mat &im_middle, c
     unique_lock<mutex> lock(mMutexReset);
     if(mbReset)
     {
-        mpTracker->Reset();
+        mpTracker->ResetWAF();
         mbReset = false;
     }
     }
